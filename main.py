@@ -2,6 +2,7 @@ from websockets.asyncio.server import serve
 import asyncio
 from string import ascii_uppercase
 from random import choice
+import json
 
 PORT = 7890
 
@@ -14,13 +15,14 @@ def generate_room_code(length):
 
 async def echo(websocket):
     print("A client connected")
+    await websocket.send(json.dumps({"room_code" : generate_room_code(4)}))
     async for message in websocket:
         print("Received message from client "  + message)
         await websocket.send("Pong: " + message)
 
 async def main():
     async with serve(echo, "localhost", PORT) as server:
-        print("Session started. Room code: " + generate_room_code(4))
+        print("Session started on port " + str(PORT) + ". Room code: " + generate_room_code(4))
         await server.serve_forever()
 
 
