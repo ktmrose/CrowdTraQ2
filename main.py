@@ -1,30 +1,24 @@
 from websockets.asyncio.server import serve
 import asyncio
-from string import ascii_uppercase
-from random import choice
+from init import generate_room_code
 import json
 
 PORT = 7890
-
-def generate_room_code(length):
-    room_code = ''
-    for i in range(length):
-        room_code = room_code + choice(ascii_uppercase)
-    return room_code
-    
+room_code = generate_room_code(4)
 
 async def echo(websocket):
     print("A client connected")
-    await websocket.send(json.dumps({"room_code" : generate_room_code(4)}))
+    await websocket.send(json.dumps({"room_code" : room_code}))
     async for message in websocket:
         print("Received message from client "  + message)
+        # make a message handler here
         await websocket.send("Pong: " + message)
 
 async def main():
+    
     async with serve(echo, "localhost", PORT) as server:
-        print("Session started on port " + str(PORT) + ". Room code: " + generate_room_code(4))
+        print("Session started on port " + str(PORT) + ". Room code: " + room_code)
         await server.serve_forever()
-
 
 if __name__ == "__main__":
     asyncio.run(main())
