@@ -1,6 +1,6 @@
 from websockets.asyncio.server import serve
 import asyncio
-from init import generate_room_code
+from init import generate_room_code, establish_spotify_connection
 import json
 
 PORT = 7890
@@ -15,7 +15,7 @@ async def echo(websocket):
         await websocket.send("Pong: " + message)
 
 async def main():
-    
+    establish_spotify_connection()
     async with serve(echo, "localhost", PORT) as server:
         print("Session started on port " + str(PORT) + ". Room code: " + room_code)
         await server.serve_forever()
