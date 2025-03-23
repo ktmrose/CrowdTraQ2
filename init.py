@@ -10,5 +10,5 @@ def generate_room_code(length):
 
 def establish_spotify_connection():
     spotify_connection = SpotifyConnection()
-    spotify_connection.initialize_access_token()
-    print(spotify_connection.get_access_token())
+    spotify_connection.initialize_general_access_token()
+    print(spotify_connection.get_access_general_token())
