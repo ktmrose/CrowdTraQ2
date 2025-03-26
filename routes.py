@@ -12,4 +12,5 @@ def callback():
         return "Error: Missing authorization code", 400
 
     token_info = spotify_connection.exchange_code_for_token(authorization_code)
+    print("user granted permission")
     return jsonify(token_info)  # For now, just display the tokens

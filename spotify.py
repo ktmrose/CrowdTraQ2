@@ -38,9 +38,8 @@ class SpotifyConnection:
         return self.spotify_token
     
     def exchange_code_for_token(self, authorization_code):
-        token_url = "https://accounts.spotify.com/api/token"
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": request_info["content_type"]
         }
         data = {
             "grant_type": "authorization_code",
@@ -49,15 +48,16 @@ class SpotifyConnection:
             "client_id": self.client_id,
             "client_secret": self.client_secret
         }
-        response = requests.post(token_url, headers=headers, data=data)
+        response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
-        self.access_token = token_info["access_token"]
-        self.refresh_token = token_info["refresh_token"]
+        print("user token info:")
+        print(token_info)
+        self.spotify_user_token = token_info["access_token"]
+        self.spotify_refresh_token = token_info["refresh_token"]
 
     def refresh_access_token(self):
-        token_url = "https://accounts.spotify.com/api/token"
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": request_info["content_type"]
         }
         data = {
             "grant_type": "refresh_token",
@@ -65,7 +65,8 @@ class SpotifyConnection:
             "client_id": self.client_id,
             "client_secret": self.client_secret
         }
-        response = requests.post(token_url, headers=headers, data=data)
+        print("getting refresh token")
+        response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
         self.access_token = token_info["access_token"]
     
