@@ -22,20 +22,17 @@ class SpotifyConnection:
             "grant_type": "client_credentials"
         }
         response = requests.post(api["token"], headers=headers, data=data)
-        self.spotify_token = response.json()
+        self.spotify_general_token = response.json()
 
     def get_authorization_url(self):
         params = {
             "client_id": self.client_id,
             "response_type": "code",
-            "redirect_uri": "http://localhost:7890/callback",
+            "redirect_uri": "http://localhost:8081/callback",
             "scope": "user-modify-playback-state",
         }
         authorize_url = f"{api["authorize"]}?{urllib.parse.urlencode(params)}"
         return authorize_url
-
-    def get_general_access_token(self):
-        return self.spotify_token
     
     def exchange_code_for_token(self, authorization_code):
         headers = {
@@ -44,7 +41,7 @@ class SpotifyConnection:
         data = {
             "grant_type": "authorization_code",
             "code": authorization_code,
-            "redirect_uri": "http://localhost:8000/callback",
+            "redirect_uri": "http://localhost:8081/callback",
             "client_id": self.client_id,
             "client_secret": self.client_secret
         }

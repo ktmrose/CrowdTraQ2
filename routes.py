@@ -1,11 +1,13 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify, Blueprint
 from spotify import SpotifyConnection
 
-app = Flask(__name__)
-
+spotify_bp = Blueprint('spotify', __name__)
 spotify_connection = SpotifyConnection()
 
-@app.route("/callback")
+def register_routes(app):
+    app.register_blueprint(spotify_bp)
+
+@spotify_bp.route("/callback")
 def callback():
     authorization_code = request.args.get("code")
     if not authorization_code:
