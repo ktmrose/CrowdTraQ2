@@ -3,10 +3,10 @@ import asyncio
 from init import generate_room_code, start_spotify_client, establish_spotify_connection
 import json
 from config import ports
-# from routes import app
-
+import signal
 
 room_code = generate_room_code(4)
+shutdown_event = asyncio.Event()
 
 async def echo(websocket):
     print("A client connected")
@@ -19,7 +19,7 @@ async def echo(websocket):
 async def start_websocket_server():
     async with serve(echo, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
         print("Session started on port " + str(ports["WEBSOCKET_SERVER_PORT"]) + ". Room code: " + room_code)
-        await server.serve_forever() 
+        await shutdown_event.wait()
 
 async def main():
     spotify_client_thread = start_spotify_client()
@@ -29,10 +29,17 @@ async def main():
         print("Crowdtraq backend online...")
 
     except KeyboardInterrupt:
+        pass
+    finally:
         print("Starting shutdown procedure...")
         spotify_client_thread.shutdown()
+        shutdown_event.set()
 
-
+def handle_exit(signum, frame):
+    print("Caught termination signal. Shutting down...")
+    shutdown_event.set()
 
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle_exit)
+    signal.signal(signal.SIGTERM, handle_exit)
     asyncio.run(main())
