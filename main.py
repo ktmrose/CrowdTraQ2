@@ -25,7 +25,7 @@ async def main():
     spotify_client_thread = start_spotify_client()
     establish_spotify_connection()
     try:
-        asyncio.run(start_websocket_server())
+        await start_websocket_server()
         print("Crowdtraq backend online...")
 
     except KeyboardInterrupt:
