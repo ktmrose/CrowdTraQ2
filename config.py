@@ -1,6 +1,7 @@
 api = {
     "token": "https://accounts.spotify.com/api/token",
-    "authorize": "https://accounts.spotify.com/authorize"
+    "authorize": "https://accounts.spotify.com/authorize",
+    "currently_playing": "https://api.spotify.com/v1/me/player/currently-playing"
 }
 
 request_info = {

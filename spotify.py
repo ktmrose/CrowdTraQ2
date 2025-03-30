@@ -47,8 +47,6 @@ class SpotifyConnection:
         }
         response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
-        print("user token info:")
-        print(token_info)
         self.spotify_user_token = token_info["access_token"]
         self.spotify_refresh_token = token_info["refresh_token"]
 
@@ -67,3 +65,9 @@ class SpotifyConnection:
         token_info = response.json()
         self.access_token = token_info["access_token"]
     
+    def get_currently_playing(self):
+        headers = {
+            "Authorization": f"Bearer {self.spotify_user_token}"
+        }
+        response = requests.get(api["currently_playing"], headers=headers)
+        print(response)
