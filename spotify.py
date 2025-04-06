@@ -70,4 +70,4 @@ class SpotifyConnection:
             "Authorization": f"Bearer {self.spotify_user_token}"
         }
         response = requests.get(api["currently_playing"], headers=headers)
-        print(response)
+        print(response.json())

@@ -14,4 +14,5 @@ def callback():
         return "Error: Missing authorization code", 400
 
     token_info = spotify_connection.exchange_code_for_token(authorization_code)
-    return jsonify(token_info)
+    #TODO: make this message prettier and maybe redirect to a different page
+    return "Authorization successful! You may now close this window"

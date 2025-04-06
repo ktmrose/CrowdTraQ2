@@ -7,10 +7,22 @@ import signal
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
+spotify_connection = establish_spotify_connection()
 
 async def echo(websocket):
     print("A client connected")
+
+    currently_playing = None
+    if spotify_connection is None:
+        raise Exception("Spotify connection is not established. PLease ensure SpotifyConnection instance runs as expected.")
+    try:
+        currently_playing = spotify_connection.get_currently_playing()
+    except Exception as e:
+        print("Error getting currently playing track:", e)
+    
+    print("Currently playing track:", currently_playing)
     await websocket.send(json.dumps({"room_code" : room_code}))
+    
     async for message in websocket:
         print("Received message from client "  + message)
         # make a message handler here
@@ -23,7 +35,6 @@ async def start_websocket_server():
 
 async def main():
     spotify_client_thread = start_spotify_client()
-    establish_spotify_connection()
     try:
         await start_websocket_server()
         print("Crowdtraq backend online...")
