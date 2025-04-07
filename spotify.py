@@ -29,7 +29,7 @@ class SpotifyConnection:
             "client_id": self.client_id,
             "response_type": "code",
             "redirect_uri": "http://localhost:8081/callback",
-            "scope": "user-modify-playback-state",
+            "scope": "user-modify-playback-state user-read-currently-playing user-read-playback-state",
         }
         authorize_url = f"{api["authorize"]}?{urllib.parse.urlencode(params)}"
         return authorize_url
@@ -70,4 +70,11 @@ class SpotifyConnection:
             "Authorization": f"Bearer {self.spotify_user_token}"
         }
         response = requests.get(api["currently_playing"], headers=headers)
-        print(response.json())
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 204:
+            print("No track currently playing.")
+            return None
+        else:
+            raise Exception(f"Error getting currently playing track: {response.status_code} - {response.text}")

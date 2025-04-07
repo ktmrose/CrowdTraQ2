@@ -4,10 +4,11 @@ from init import generate_room_code, start_spotify_client, establish_spotify_con
 import json
 from config import ports
 import signal
+from spotify_manager import SpotifyConnectionManager
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
-spotify_connection = establish_spotify_connection()
+spotify_connection = SpotifyConnectionManager.get_instance()
 
 async def echo(websocket):
     print("A client connected")
@@ -35,6 +36,7 @@ async def start_websocket_server():
 
 async def main():
     spotify_client_thread = start_spotify_client()
+    establish_spotify_connection()
     try:
         await start_websocket_server()
         print("Crowdtraq backend online...")

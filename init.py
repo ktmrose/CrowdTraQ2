@@ -1,6 +1,6 @@
 from string import ascii_uppercase
 from random import choice
-from spotify import SpotifyConnection
+from spotify_manager import SpotifyConnectionManager
 from flask import Flask
 from werkzeug.serving import make_server
 from threading import Thread
@@ -37,8 +37,7 @@ def start_spotify_client():
     return spotify_client_thread
 
 def establish_spotify_connection():
-    spotify_connection = SpotifyConnection()
+    spotify_connection = SpotifyConnectionManager().get_instance()
     # spotify_connection.initialize_general_access_token()
     # print(spotify_connection.spotify_general_token)
     print("Go to this URL to authorize your app:", spotify_connection.get_authorization_url())
-    return spotify_connection
