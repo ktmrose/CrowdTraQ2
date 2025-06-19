@@ -49,7 +49,7 @@ async def main():
     
     finally:
         shutdown_start = time.time()
-        print("Starting shutdown procedure. This may take a few minutes...")
+        print("Starting shutdown procedure. This may take up to 15 minutes until I get around to fixing this")
         spotify_client_thread.shutdown()
         spotify_client_thread.join(timeout=5)
         print("Spotify client thread has been shut down.")
