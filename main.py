@@ -6,6 +6,7 @@ from config import ports
 import signal
 from spotify_manager import SpotifyConnectionManager
 from handlers import clean_currently_playing
+import time
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
@@ -41,14 +42,20 @@ async def main():
     establish_spotify_connection()
     try:
         await start_websocket_server()
-        print("Crowdtraq backend online...")
+        print("Crowdtraq websocket thread shutdown...")
 
     except KeyboardInterrupt:
         pass
+    
     finally:
-        print("Starting shutdown procedure...")
+        shutdown_start = time.time()
+        print("Starting shutdown procedure. This may take a few minutes...")
         spotify_client_thread.shutdown()
+        spotify_client_thread.join(timeout=5)
+        print("Spotify client thread has been shut down.")
         shutdown_event.set()
+        shutdown_end = time.time()
+        print(f"Shutdown took {shutdown_end - shutdown_start:.2f} seconds.")
 
 def handle_exit(signum, frame):
     print("Caught termination signal. Shutting down...")

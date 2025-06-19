@@ -19,7 +19,8 @@ class SpotifyConnectionThread(Thread):
     
     def run(self):
         print("Starting Spotify integration thread...")
-        self.server.serve_forever()
+        self.server.serve_forever(poll_interval=0.1)
+        print("Spotify integration thread exiting...")
     
     def shutdown(self):
         print("Shutting down Spotify integration thread...")

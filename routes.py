@@ -1,4 +1,4 @@
-from flask import request, Blueprint
+from flask import request, Blueprint, after_this_request
 from spotify_manager import SpotifyConnectionManager
 
 spotify_bp = Blueprint('spotify', __name__)
@@ -8,6 +8,10 @@ def register_routes(app):
 
 @spotify_bp.route("/callback")
 def callback():
+    @after_this_request
+    def add_header(response):
+        response.headers['Connection'] = 'close'
+        return response
     authorization_code = request.args.get("code")
     if not authorization_code:
         return "Error: Missing authorization code", 400
