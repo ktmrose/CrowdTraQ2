@@ -5,14 +5,14 @@ import json
 from config import ports
 import signal
 from spotify_manager import SpotifyConnectionManager
-from handlers import clean_currently_playing
+from handlers import clean_currently_playing, message_handler
 import time
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
 spotify_connection = SpotifyConnectionManager.get_instance()
 
-async def echo(websocket):
+async def client_connector(websocket):
     print("A client connected")
 
     currently_playing = None
@@ -29,11 +29,12 @@ async def echo(websocket):
     
     async for message in websocket:
         print("Received message from client "  + message)
-        # make a message handler here
-        await websocket.send("Pong: " + message)
+        parsed_message = json.loads(message)
+        response = message_handler(parsed_message)
+        await websocket.send(json.dumps(response))
 
 async def start_websocket_server():
-    async with serve(echo, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
+    async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
         print("Session started on port " + str(ports["WEBSOCKET_SERVER_PORT"]) + ". Room code: " + room_code)
         await shutdown_event.wait()
 

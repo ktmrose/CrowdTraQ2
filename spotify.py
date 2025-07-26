@@ -78,3 +78,38 @@ class SpotifyConnection:
             return None
         else:
             raise Exception(f"Error getting currently playing track: {response.status_code} - {response.text}")
+        
+    def add_track_by_id(self, track_id):
+        """
+        Looks up a track by its ID using Spotify's API.
+        """
+        headers = {
+            "Authorization": f"Bearer {self.spotify_user_token}"
+        }
+        url = f"{api['track_lookup']}/{track_id}"
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 401:
+            print("Access token expired. Refreshing token...")
+            self.refresh_access_token()
+            return self.add_track_by_id(track_id)  # Retry after refreshing token
+        else:
+            raise Exception(f"Error looking up track: {response.status_code} - {response.text}")
+        
+    def search_track(self, query):
+        headers = {
+            "Authorization": f"Bearer {self.spotify_user_token}"
+        }
+        url = f"{api['track_search']}?q={urllib.parse.quote(query)}&type=track"
+        response = requests.get(url, headers=headers)
+
+        if (response.status_code == 200):
+            return response.json()
+        elif response.status_code == 401:
+            print("Access token expired. Refreshing token...")
+            self.refresh_access_token()
+            return self.search_track(query)
+        else: 
+            raise Exception(f"Error searching track: {response.status_code} - {response.text}")
