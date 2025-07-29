@@ -5,7 +5,7 @@ import json
 from config import ports
 import signal
 from spotify_manager import SpotifyConnectionManager
-from handlers import clean_currently_playing
+from handlers import clean_currently_playing, handle_user_message, user_search_songs
 import time
 
 room_code = generate_room_code(4)
@@ -29,8 +29,7 @@ async def echo(websocket):
     
     async for message in websocket:
         print("Received message from client "  + message)
-        # make a message handler here
-        await websocket.send("Pong: " + message)
+        await websocket.send(handle_user_message(message, spotify_connection))
 
 async def start_websocket_server():
     async with serve(echo, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
