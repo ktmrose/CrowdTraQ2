@@ -5,7 +5,9 @@ def message_handler(message):
     from spotify_manager import SpotifyConnectionManager
     spotify_connection = SpotifyConnectionManager.get_instance()
 
-    if "action" not in message:
+    if not isinstance(message, dict):
+        return {"error": "Message must be a JSON object."}
+    elif "action" not in message:
         return {"error": "Invalid message format. 'action' key is required."}
 
     action = message["action"]
@@ -30,6 +32,9 @@ def message_handler(message):
             # Dislike currently playing track
             return None  # Placeholder for disliking functionality
 
+        case "search":
+            query = message.get("data", "")
+            return search_song(query)
         case _:
             return {"error": f"Unknown action: {action}"}
 
@@ -62,17 +67,20 @@ def search_song(input):
     """
     from spotify_manager import SpotifyConnectionManager
     spotify_connection = SpotifyConnectionManager.get_instance()
-    track_info = spotify_connection.search_track(input)
+    track_info = spotify_connection.search_songs(input)
 
     if not track_info:
         return None
 
-    return {
-        "track_name": track_info.get("name"),
-        "artists": [artist.get("name") for artist in track_info.get("artists", [])],
-        "album": track_info.get("album", {}).get("name"),
-        "album_art": track_info.get("album", {}).get("images", [{}])[0].get("url"),
-        "duration_ms": track_info.get("duration_ms"),
-        "track_id": track_info.get("id"),
-        "uri": track_info.get("uri"),
-    }
+    items = track_info["tracks"].get("items", [])
+    data = [
+        {
+            "track_name": item.get("name"),
+            "artists": [artist.get("name") for artist in item.get("artists", [])],
+            "track_id": item.get("id"),
+            "album_art": item.get("album", {}).get("images", [{}])[0].get("url"),
+        }
+        for item in items
+    ]
+
+    return {"data": data}

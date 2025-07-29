@@ -79,12 +79,16 @@ class SpotifyConnection:
         else:
             raise Exception(f"Error getting currently playing track: {response.status_code} - {response.text}")
         
-    def search_songs(self, query, type="track", limit=10):
-        print("searching for song:", query)
+    def search_songs(self, query, type="track", limit=5):
         headers = {
             "Authorization": f"Bearer {self.spotify_user_token}"
         }
-        response = requests.get(api["search"].format(query=urllib.parse.quote(query)), headers=headers, params={"type": type, "limit": limit})
+        params = {
+            "q": query,
+            "type": type,
+            "limit": limit
+        }
+        response = requests.get(api["track_search"], headers=headers, params=params)
         if response.status_code == 200:
             return response.json()
         else:
