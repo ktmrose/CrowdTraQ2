@@ -1,3 +1,38 @@
+def message_handler(message):
+    """
+    Handles incoming messages from the client and returns appropriate responses.
+    """
+    from spotify_manager import SpotifyConnectionManager
+    spotify_connection = SpotifyConnectionManager.get_instance()
+
+    if "action" not in message:
+        return {"error": "Invalid message format. 'action' key is required."}
+
+    action = message["action"]
+
+    match action:
+        case "refresh":
+            currently_playing = spotify_connection.get_currently_playing()
+            return clean_currently_playing(currently_playing)
+
+        case "add_track":
+            track_id = message.get("track_id")
+            if not track_id:
+                return {"error": "Missing 'track_id' in message."}
+            spotify_connection.add_track_by_id(track_id)
+            return {"status": "Track added to queue."}
+
+        case "like_track":
+            # Like currently playing track
+            return None  # Placeholder for liking functionality
+
+        case "dislike_track":
+            # Dislike currently playing track
+            return None  # Placeholder for disliking functionality
+
+        case _:
+            return {"error": f"Unknown action: {action}"}
+
 def clean_currently_playing(spotify_response):
     """
     Extracts and formats relevant info from Spotify's currently playing API response.
@@ -21,35 +56,23 @@ def clean_currently_playing(spotify_response):
         "uri": item.get("uri"),
     }
 
-def user_search_songs(spotify_connection, query):
+def search_song(input):
     """
-    Searches for songs using the Spotify API.
+    Looks up a track by its ID and returns its details.
     """
-    if not spotify_connection:
-        raise Exception("Spotify connection is not established. Please ensure SpotifyConnection instance runs as expected.")
-    
-    try:
-        results = spotify_connection.search_songs(query, limit=10)
-        return results.get('tracks', {}).get('items', [])
-    except Exception as e:
-        print("Error searching for songs:", e)
-        return []
-    
-def handle_user_message(message, spotify_connection):
-    """
-    Handles user messages received from the WebSocket.
-    """
-    if not spotify_connection:
-        raise Exception("Spotify connection is not established. Please ensure SpotifyConnection instance runs as expected.")
-    
-    if message.startswith("search:"):
-        query = message[len("search:"):].strip()
-        search_results = user_search_songs(spotify_connection, query)
-        response = {
-            "type": "search_results",
-            "results": search_results
-        }
-        return response
-    else:
-        # Handle other message types here
-        pass
+    from spotify_manager import SpotifyConnectionManager
+    spotify_connection = SpotifyConnectionManager.get_instance()
+    track_info = spotify_connection.search_track(input)
+
+    if not track_info:
+        return None
+
+    return {
+        "track_name": track_info.get("name"),
+        "artists": [artist.get("name") for artist in track_info.get("artists", [])],
+        "album": track_info.get("album", {}).get("name"),
+        "album_art": track_info.get("album", {}).get("images", [{}])[0].get("url"),
+        "duration_ms": track_info.get("duration_ms"),
+        "track_id": track_info.get("id"),
+        "uri": track_info.get("uri"),
+    }

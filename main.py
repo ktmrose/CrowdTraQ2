@@ -12,7 +12,7 @@ room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
 spotify_connection = SpotifyConnectionManager.get_instance()
 
-async def echo(websocket):
+async def client_connector(websocket):
     print("A client connected")
 
     currently_playing = None
@@ -32,7 +32,7 @@ async def echo(websocket):
         await websocket.send(handle_user_message(message, spotify_connection))
 
 async def start_websocket_server():
-    async with serve(echo, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
+    async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
         print("Session started on port " + str(ports["WEBSOCKET_SERVER_PORT"]) + ". Room code: " + room_code)
         await shutdown_event.wait()
 

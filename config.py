@@ -2,7 +2,8 @@ api = {
     "token": "https://accounts.spotify.com/api/token",
     "authorize": "https://accounts.spotify.com/authorize",
     "currently_playing": "https://api.spotify.com/v1/me/player/currently-playing",
-    "search": "https://api.spotify.com/v1/search?q={query}"
+    "track_search": "https://api.spotify.com/v1/search",
+    "track_lookup": "https://api.spotify.com/v1/tracks/",
 }
 
 request_info = {
