@@ -1,5 +1,6 @@
 import base64
 import os
+import time
 import requests
 import urllib.parse
 from config import api, request_info
@@ -11,6 +12,7 @@ class SpotifyConnection:
         self.spotify_refresh_token = None
         self.client_id = os.getenv("spotify_client_id")
         self.client_secret = os.getenv("spotify_client_secret")
+        self.token_expiration = 0
 
     # used for calls that do not require user permissions (i.e. song lookup)
     def initialize_general_access_token(self):
@@ -49,6 +51,9 @@ class SpotifyConnection:
         token_info = response.json()
         self.spotify_user_token = token_info["access_token"]
         self.spotify_refresh_token = token_info["refresh_token"]
+        expires_in = token_info["expires_in"] # 3600 seconds
+        self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+        print("Spotify user token expires at: ", self.token_expiration)
 
     def refresh_access_token(self):
         headers = {
@@ -56,16 +61,23 @@ class SpotifyConnection:
         }
         data = {
             "grant_type": "refresh_token",
-            "refresh_token": self.refresh_token,
+            "refresh_token": self.spotify_refresh_token,
             "client_id": self.client_id,
             "client_secret": self.client_secret
         }
-        print("getting refresh token")
+        print("getting refresh token...")
         response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
         self.access_token = token_info["access_token"]
+        expires_in = token_info.get("expires_in", 3600)
+        self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+
+    def ensure_token_valid(self):
+        if self.spotify_user_token is None or self.token_expiration <= time.time():
+            self.refresh_access_token()
     
     def get_currently_playing(self):
+        self.ensure_token_valid()
         headers = {
             "Authorization": f"Bearer {self.spotify_user_token}"
         }
