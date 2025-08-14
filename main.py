@@ -4,31 +4,27 @@ from init import generate_room_code, start_spotify_client, establish_spotify_con
 import json
 from config import ports
 import signal
-from spotify_manager import SpotifyConnectionManager
-from handlers import clean_currently_playing, message_handler
+from handlers import ClientHandler
 import time
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
-spotify_connection = SpotifyConnectionManager.get_instance()
+
+client_handler = ClientHandler()
 
 async def client_connector(websocket):
     print("A client connected")
 
-    currently_playing = None
-    if spotify_connection is None:
-        raise Exception("Spotify connection is not established. PLease ensure SpotifyConnection instance runs as expected.")
     try:
-        currently_playing = spotify_connection.get_currently_playing()
-        cleaned_currently_playing = clean_currently_playing(currently_playing)
+        currently_playing = client_handler.clean_currently_playing()
     except Exception as e:
         print("Error getting currently playing track:", e)
     
-    print("Currently playing track:", cleaned_currently_playing)
-    await websocket.send(json.dumps({"room_code" : room_code, "currently_playing": cleaned_currently_playing}))
+    print("Currently playing track:", currently_playing)
+    await websocket.send(json.dumps({"room_code" : room_code, "currently_playing": currently_playing}))
     
     async for message in websocket:
-        response = message_handler(json.loads(message))
+        response = client_handler.message_handler(json.loads(message))
         await websocket.send(json.dumps(response))
 
 async def start_websocket_server():

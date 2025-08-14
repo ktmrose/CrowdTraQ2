@@ -4,6 +4,7 @@ api = {
     "currently_playing": "https://api.spotify.com/v1/me/player/currently-playing",
     "track_search": "https://api.spotify.com/v1/search",
     "track_lookup": "https://api.spotify.com/v1/tracks/",
+    "add_to_queue": "https://api.spotify.com/v1/me/player/queue",
 }
 
 request_info = {

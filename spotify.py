@@ -105,3 +105,15 @@ class SpotifyConnection:
             return response.json()
         else:
             raise Exception(f"Error searching for songs: {response.status_code} - {response.text}")
+        
+    def add_track_by_id(self, track_id):
+        self.ensure_token_valid()
+        headers = {
+            "Authorization": f"Bearer {self.spotify_user_token}",
+            "Content-Type": "application/json"
+        }
+        params = {
+            "uri": f"spotify:track:{track_id}"
+        }
+        response = requests.post(api["add_to_queue"], headers=headers, params=params)
+        return response
