@@ -6,6 +6,12 @@ class ClientHandler:
         self._currently_playing = None
         self._spotify_connection = SpotifyConnectionManager.get_instance()
 
+    def get_queue_length(self):
+        """
+        Returns the current song queue.
+        """
+        return len(self._songQueue)
+
     def message_handler(self, message):
         """
         Handles incoming messages from the client and returns appropriate responses.
@@ -28,13 +34,13 @@ class ClientHandler:
             case "add_track":
                 track_id = data.get("track_id")
                 if not track_id:
-                    return {"error": "Missing 'track_id' in message."}
+                    return {"status": False, "error": "Missing 'track_id' in message."}
                 response = self._spotify_connection.add_track_by_id(track_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
                     self._songQueue.append(track_id)
-                    return {"status": "Track added to queue."}
+                    return {"status": True}
                 else:
-                    return {"error": "Failed to add track to Spotify queue."}
+                    return {"status": False, "error": "Failed to add track to Spotify queue."}
 
             case "like_track":
                 # Like currently playing track
@@ -48,7 +54,7 @@ class ClientHandler:
                 query = data.get("query", "")
                 return self.search_song(query)
             case _:
-                return {"error": f"Unknown action: {action}"}
+                return {"status": False, "error": f"Unknown action: {action}"}
 
     def clean_currently_playing(self):
         """

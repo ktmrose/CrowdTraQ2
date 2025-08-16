@@ -4,17 +4,24 @@ from init import generate_room_code, start_spotify_client, establish_spotify_con
 import json
 from config import ports
 import signal
-from handlers import ClientHandler
+from handlers import ClientHandler 
 import time
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
+connected_clients = set()
 
 client_handler = ClientHandler()
 
-async def client_connector(websocket):
-    print("A client connected")
+async def broadcast_queue_length():
+    queue_length = client_handler.get_queue_length()
+    message = json.dumps({"queue_length": queue_length})
+    print(f"Broadcasting queue length {queue_length} to {len(connected_clients)} clients")
+    await asyncio.gather(*(client.send(message) for client in connected_clients if not client.close))
 
+async def client_connector(websocket):
+    print("Clients connected:", len(connected_clients) + 1)
+    connected_clients.add(websocket)
     try:
         currently_playing = client_handler.clean_currently_playing()
     except Exception as e:
@@ -25,7 +32,12 @@ async def client_connector(websocket):
     
     async for message in websocket:
         response = client_handler.message_handler(json.loads(message))
+        print("Received message:", response)
+        if response.get("status"):
+            await broadcast_queue_length()
         await websocket.send(json.dumps(response))
+    
+    connected_clients.remove(websocket)
 
 async def start_websocket_server():
     async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
