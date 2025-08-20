@@ -103,6 +103,10 @@ class SpotifyConnection:
         response = requests.get(api["track_search"], headers=headers, params=params)
         if response.status_code == 200:
             return response.json()
+        elif response.status_code == 401:
+            print("Unauthorized request. Refreshing token...")
+            self.refresh_access_token()
+            return self.search_songs(query, type, limit)
         else:
             raise Exception(f"Error searching for songs: {response.status_code} - {response.text}")
         
