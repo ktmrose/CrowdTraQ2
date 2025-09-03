@@ -101,4 +101,4 @@ class ClientHandler:
             for item in items
         ]
 
-        return {"data": data}
+        return {"search_data": data}
