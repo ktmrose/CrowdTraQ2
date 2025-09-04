@@ -44,10 +44,12 @@ class ClientHandler:
 
             case "like_track":
                 # Like currently playing track
+                print("Someone likes this track")
                 return None  # Placeholder for liking functionality
 
             case "dislike_track":
                 # Dislike currently playing track
+                print("Someone dislikes this track")
                 return None  # Placeholder for disliking functionality
 
             case "search":

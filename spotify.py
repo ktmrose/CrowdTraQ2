@@ -65,12 +65,19 @@ class SpotifyConnection:
             "client_id": self.client_id,
             "client_secret": self.client_secret
         }
-        print("getting refresh token...")
+
         response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
-        self.access_token = token_info["access_token"]
-        expires_in = token_info.get("expires_in", 3600)
-        self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+        self.spotify_user_token = token_info["access_token"]
+        # Update refresh token if provided
+        if "refresh_token" in token_info:
+            print("getting refresh token info...")
+            self.spotify_refresh_token = token_info["refresh_token"]
+            expires_in = token_info.get("expires_in", 3600)
+            self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+        else:
+            print("No new refresh token provided; keeping the existing one or restart server.")
+            print(token_info)
 
     def ensure_token_valid(self):
         if self.spotify_user_token is None or self.token_expiration <= time.time():
