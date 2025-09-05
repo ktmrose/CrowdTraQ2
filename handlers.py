@@ -28,8 +28,7 @@ class ClientHandler:
 
         match action:
             case "refresh":
-                currently_playing = self._spotify_connection.get_currently_playing()
-                return self.clean_currently_playing(currently_playing)
+                return self.clean_currently_playing()
 
             case "add_track":
                 track_id = data.get("track_id")
