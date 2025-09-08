@@ -13,6 +13,24 @@ connected_clients = set()
 
 client_handler = ClientHandler()
 
+async def poll_currently_playing():
+    while True:
+        try:
+            info = client_handler._spotify_connection.get_currently_playing()
+            if info and info.get("is_playing"):
+                duration = info["item"]["duration_ms"]
+                progress = info.get("progress_ms", 0)
+                # Calculate time left, poll 2 seconds before the song ends, but not less than 1 second
+                time_left = max((duration - progress) / 1000.0 - 2, 1)
+                print(f"Song playing, polling again in {time_left:.1f} seconds")
+                await asyncio.sleep(time_left)
+            else:
+                print("Nothing playing, polling again in 5 seconds")
+                await asyncio.sleep(5)
+        except Exception as e:
+            print("Error polling currently playing:", e)
+            await asyncio.sleep(5)
+
 async def broadcast_queue_length():
     queue_length = client_handler.get_queue_length()
     message = json.dumps({"queue_length": queue_length})
@@ -47,6 +65,7 @@ async def start_websocket_server():
 async def main():
     spotify_client_thread = start_spotify_client()
     establish_spotify_connection()
+    poll_task = asyncio.create_task(poll_currently_playing())
     try:
         await start_websocket_server()
         print("Crowdtraq websocket thread shutdown...")
@@ -55,6 +74,7 @@ async def main():
         pass
     
     finally:
+        poll_task.cancel()
         shutdown_start = time.time()
         print("Starting shutdown procedure. This may take up to 15 minutes until I get around to fixing this")
         spotify_client_thread.shutdown()

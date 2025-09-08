@@ -81,6 +81,7 @@ class SpotifyConnection:
 
     def ensure_token_valid(self):
         if self.spotify_user_token is None or self.token_expiration <= time.time():
+            print("token expired or not set, refreshing...")
             self.refresh_access_token()
     
     def get_currently_playing(self):
@@ -99,6 +100,7 @@ class SpotifyConnection:
             raise Exception(f"Error getting currently playing track: {response.status_code} - {response.text}")
         
     def search_songs(self, query, type="track", limit=5):
+        self.ensure_token_valid()
         headers = {
             "Authorization": f"Bearer {self.spotify_user_token}"
         }
@@ -110,10 +112,6 @@ class SpotifyConnection:
         response = requests.get(api["track_search"], headers=headers, params=params)
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 401:
-            print("Unauthorized request. Refreshing token...")
-            self.refresh_access_token()
-            return self.search_songs(query, type, limit)
         else:
             raise Exception(f"Error searching for songs: {response.status_code} - {response.text}")
         
