@@ -33,29 +33,51 @@ async def poll_currently_playing():
 
 async def broadcast_queue_length():
     queue_length = client_handler.get_queue_length()
-    message = json.dumps({"queue_length": queue_length})
-    print(f"Broadcasting queue length {queue_length} to {len(connected_clients)} clients")
-    await asyncio.gather(*(client.send(message) for client in connected_clients if not client.close))
+    payload = json.dumps({"queue_length": queue_length})
+    targets = list(connected_clients)  # snapshot to avoid concurrent modification
+    print(f"Broadcasting queue length {queue_length} to {len(targets)} clients")
+
+    results = await asyncio.gather(
+        *(safe_send(ws, payload) for ws in targets),
+        return_exceptions=True,
+    )
+
+    for ws, result in zip(targets, results):
+        if isinstance(result, Exception):
+            print(f"Pruning client {ws}: {result}")
+            connected_clients.discard(ws)
+
+async def safe_send(ws, payload):
+    await ws.send(payload)  # exceptions bubble up to broadcast
 
 async def client_connector(websocket):
-    print("Clients connected:", len(connected_clients) + 1)
     connected_clients.add(websocket)
     try:
-        currently_playing = client_handler.clean_currently_playing()
+        try:
+            currently_playing = client_handler.clean_currently_playing()
+        except Exception as e:
+            print("Error getting currently playing track:", e)
+            currently_playing = {}
+
+        # Unicast initial state to this client
+        await websocket.send(json.dumps(currently_playing))
+        await websocket.send(json.dumps({"queue_length": client_handler.get_queue_length()}))
+
+        # Optionally also broadcast so everyone else sees updates triggered by this join
+        await broadcast_queue_length()
+
+        async for raw in websocket:
+            response = client_handler.message_handler(json.loads(raw))
+            if response.get("status"):
+                await broadcast_queue_length()
+            await websocket.send(json.dumps(response))
+
     except Exception as e:
-        print("Error getting currently playing track:", e)
-    
-    print(currently_playing)
-    await websocket.send(json.dumps(currently_playing))
-    
-    async for message in websocket:
-        response = client_handler.message_handler(json.loads(message))
-        print("Received message:", response)
-        if response.get("status"):
-            await broadcast_queue_length()
-        await websocket.send(json.dumps(response))
-    
-    connected_clients.remove(websocket)
+        print("Error in client_connector:", e)
+
+    finally:
+        connected_clients.discard(websocket)
+
 
 async def start_websocket_server():
     async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
