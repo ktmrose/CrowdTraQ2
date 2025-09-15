@@ -27,8 +27,8 @@ async def client_connector(websocket):
     except Exception as e:
         print("Error getting currently playing track:", e)
     
-    print("Currently playing track:", currently_playing)
-    await websocket.send(json.dumps({"room_code" : room_code, "currently_playing": currently_playing}))
+    print(currently_playing)
+    await websocket.send(json.dumps(currently_playing))
     
     async for message in websocket:
         response = client_handler.message_handler(json.loads(message))

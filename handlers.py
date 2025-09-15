@@ -70,7 +70,7 @@ class ClientHandler:
         
         item = self._currently_playing.get("item", {})
 
-        return {
+        return { "currently_playing":{
             "track_name": item.get("name"),
             "artists": [artist.get("name") for artist in item.get("artists", [])],
             "album": item.get("album", {}).get("name"),
@@ -80,7 +80,7 @@ class ClientHandler:
             "is_playing": self._currently_playing.get("is_playing"),
             "track_id": item.get("id"),
             "uri": item.get("uri"),
-        }
+        }}
 
     def search_song(self, input):
         """
