@@ -1,10 +1,10 @@
 from string import ascii_uppercase
 from random import choice
-from spotify_manager import SpotifyConnectionManager
+from app.services.spotify_manager import SpotifyConnectionManager
 from flask import Flask
 from werkzeug.serving import make_server
 from threading import Thread
-from routes import register_routes
+from app.routes.routes import register_routes
 
 app = Flask(__name__)
 

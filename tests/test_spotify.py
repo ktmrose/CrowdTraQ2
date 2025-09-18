@@ -1,5 +1,5 @@
 import pytest
-from spotify import SpotifyConnection
+from app.core.spotify_client import SpotifyConnection
 
 @pytest.fixture
 def spotify(monkeypatch):

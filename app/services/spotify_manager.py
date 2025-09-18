@@ -1,4 +1,4 @@
-from spotify import SpotifyConnection
+from app.core.spotify_client import SpotifyConnection
 
 class SpotifyConnectionManager:
     _instance = None

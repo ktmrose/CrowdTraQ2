@@ -1,4 +1,4 @@
-from spotify_manager import SpotifyConnectionManager
+from app.services.spotify_manager import SpotifyConnectionManager
 class ClientHandler:
 
     def __init__(self):

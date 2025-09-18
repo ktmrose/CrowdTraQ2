@@ -1,5 +1,5 @@
 import pytest
-from handlers import clean_currently_playing, user_search_songs, handle_user_message
+from app.handlers.client_handler import clean_currently_playing, user_search_songs, handle_user_message
 
 @pytest.fixture
 def mock_spotify_connection(monkeypatch):

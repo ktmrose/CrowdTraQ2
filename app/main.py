@@ -1,10 +1,10 @@
 from websockets.asyncio.server import serve
 import asyncio
-from init import generate_room_code, start_spotify_client, establish_spotify_connection
+from app.core.init_app import generate_room_code, start_spotify_client, establish_spotify_connection
 import json
-from config import ports
+from app.config.settings import ports
 import signal
-from handlers import ClientHandler 
+from app.handlers.client_handler import ClientHandler 
 import time
 
 room_code = generate_room_code(4)

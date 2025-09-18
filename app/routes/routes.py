@@ -1,5 +1,5 @@
 from flask import request, Blueprint, after_this_request
-from spotify_manager import SpotifyConnectionManager
+from app.services.spotify_manager import SpotifyConnectionManager
 
 spotify_bp = Blueprint('spotify', __name__)
 
