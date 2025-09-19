@@ -1,16 +1,18 @@
 from app.services.spotify_manager import SpotifyConnectionManager
+from app.services.queue_manager import SongQueue, SongFeedback
 class ClientHandler:
 
     def __init__(self):
-        self._songQueue = []
-        self._currently_playing = None
+        self._songQueue = SongQueue()
+        self.song_feedback = SongFeedback()
+        # self._currently_playing = None
         self._spotify_connection = SpotifyConnectionManager.get_instance()
 
     def get_queue_length(self):
         """
         Returns the current song queue.
         """
-        return len(self._songQueue)
+        return self._songQueue.length()
 
     def message_handler(self, message):
         """
@@ -36,7 +38,7 @@ class ClientHandler:
                     return {"status": False, "error": "Missing 'track_id' in message."}
                 response = self._spotify_connection.add_track_by_id(track_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
-                    self._songQueue.append(track_id)
+                    self._songQueue.add(track_id)
                     return {"status": True}
                 else:
                     return {"status": False, "error": "Failed to add track to Spotify queue."}

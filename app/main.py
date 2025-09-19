@@ -18,9 +18,23 @@ async def poll_currently_playing():
         try:
             info = client_handler._spotify_connection.get_currently_playing()
             if info and info.get("is_playing"):
+                track_id = info["item"]["id"]
+                
+                # Check if the first item in our queue matches the current track
+                first_in_queue = client_handler._songQueue.peek_first()
+                if first_in_queue == track_id:
+                    removed = client_handler._songQueue.remove_first(track_id)
+                    if removed:
+                        print(f"Removed {track_id} from queue")
+                        await broadcast_queue_length()
+
+                # Always reset feedback when track changes OR when queue advances
+                client_handler.song_feedback.set_current_track(track_id)
+
+                # Sleep until near the end of the song
+
                 duration = info["item"]["duration_ms"]
                 progress = info.get("progress_ms", 0)
-                # Calculate time left, poll 2 seconds before the song ends, but not less than 1 second
                 time_left = max((duration - progress) / 1000.0 - 2, 1)
                 print(f"Song playing, polling again in {time_left:.1f} seconds")
                 await asyncio.sleep(time_left)

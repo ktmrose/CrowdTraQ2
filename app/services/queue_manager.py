@@ -6,11 +6,13 @@ class SongQueue:
         self._queue.append(track_id)
 
     def remove_first(self, track_id):
-        try:
-            self._queue.remove(track_id)  # removes first occurrence only
+        if self._queue and self._queue[0] == track_id:
+            self._queue.pop(0)
             return True
-        except ValueError:
-            return False
+        return False
+
+    def peek_first(self):
+        return self._queue[0] if self._queue else None
 
     def length(self):
         return len(self._queue)
