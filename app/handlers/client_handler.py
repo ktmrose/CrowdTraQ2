@@ -2,10 +2,10 @@ from app.services.spotify_manager import SpotifyConnectionManager
 from app.services.queue_manager import SongQueue, SongFeedback
 class ClientHandler:
 
-    def __init__(self):
+    def __init__(self, currency_manager):
         self._songQueue = SongQueue()
         self.song_feedback = SongFeedback()
-        # self._currently_playing = None
+        self.currency_manager = currency_manager
         self._spotify_connection = SpotifyConnectionManager.get_instance()
 
     def get_queue_length(self):
@@ -14,7 +14,7 @@ class ClientHandler:
         """
         return self._songQueue.length()
 
-    def message_handler(self, message):
+    def message_handler(self, message, websocket_id):
         """
         Handles incoming messages from the client and returns appropriate responses.
         """
@@ -35,13 +35,20 @@ class ClientHandler:
             case "add_track":
                 track_id = data.get("track_id")
                 if not track_id:
-                    return {"status": False, "error": "Missing 'track_id' in message."}
+                    return {"status": False, "error": "Missing 'track_id'"}
+
+                success, new_balance = self.currency_manager.try_spend(websocket_id, self._songQueue.length())
+
+                print(f"Client {websocket_id} attempting to add track {track_id}. Success: {success}, New Balance: {new_balance}")
+                if not success:
+                    return {"status": False, "error": "Insufficient tokens", "balance": new_balance}
+
                 response = self._spotify_connection.add_track_by_id(track_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
                     self._songQueue.add(track_id)
-                    return {"status": True}
+                    return {"status": True, "tokens": new_balance}
                 else:
-                    return {"status": False, "error": "Failed to add track to Spotify queue."}
+                    return {"status": False, "error": "Failed to add track", "tokens": new_balance}
 
             case "like_track":
                 # Like currently playing track

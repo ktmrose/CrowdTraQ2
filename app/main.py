@@ -1,6 +1,7 @@
 from websockets.asyncio.server import serve
 import asyncio
 from app.core.init_app import generate_room_code, start_spotify_client, establish_spotify_connection
+from app.services.currency_manager import CurrencyManager
 import json
 from app.config.settings import ports
 import signal
@@ -11,7 +12,8 @@ room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
 connected_clients = set()
 
-client_handler = ClientHandler()
+currency_manager = CurrencyManager()
+client_handler = ClientHandler(currency_manager)
 
 async def poll_currently_playing():
     while True:
@@ -66,6 +68,7 @@ async def safe_send(ws, payload):
 
 async def client_connector(websocket):
     connected_clients.add(websocket)
+    currency_manager.register_client(websocket.id)
     try:
         try:
             currently_playing = client_handler.clean_currently_playing()
@@ -74,14 +77,17 @@ async def client_connector(websocket):
             currently_playing = {}
 
         # Unicast initial state to this client
-        await websocket.send(json.dumps(currently_playing))
-        await websocket.send(json.dumps({"queue_length": client_handler.get_queue_length()}))
+        await websocket.send(json.dumps({
+            **(currently_playing or {}), 
+            "queue_length": client_handler.get_queue_length(),
+            "tokens": currency_manager.get_balance(websocket.id)
+        }))
 
         # Optionally also broadcast so everyone else sees updates triggered by this join
         await broadcast_queue_length()
 
         async for raw in websocket:
-            response = client_handler.message_handler(json.loads(raw))
+            response = client_handler.message_handler(json.loads(raw), websocket.id)
             if response.get("status"):
                 await broadcast_queue_length()
             await websocket.send(json.dumps(response))
@@ -90,6 +96,7 @@ async def client_connector(websocket):
         print("Error in client_connector:", e)
 
     finally:
+        currency_manager.remove_client(websocket.id or id(websocket))
         connected_clients.discard(websocket)
 
 
