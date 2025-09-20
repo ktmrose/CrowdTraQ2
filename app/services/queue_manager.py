@@ -2,8 +2,8 @@ class SongQueue:
     def __init__(self):
         self._queue = []
 
-    def add(self, track_id):
-        self._queue.append(track_id)
+    def add(self, track_id, client_id):
+        self._queue.append({"track_id": track_id, "owner": client_id})
 
     def remove_first(self, track_id):
         if self._queue and self._queue[0] == track_id:

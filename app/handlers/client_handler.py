@@ -43,7 +43,7 @@ class ClientHandler:
                 if not success:
                     return {"status": False, "error": "Insufficient tokens", "balance": new_balance}
 
-                response = self._spotify_connection.add_track_by_id(track_id)
+                response = self._spotify_connection.add_track_by_id(track_id, websocket_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
                     self._songQueue.add(track_id)
                     return {"status": True, "tokens": new_balance}
@@ -51,20 +51,31 @@ class ClientHandler:
                     return {"status": False, "error": "Failed to add track", "tokens": new_balance}
 
             case "like_track":
-                # Like currently playing track
-                print("Someone likes this track")
-                return None  # Placeholder for liking functionality
+                feedbackResponse = self.check_currently_playing()
+                self.song_feedback.like()
+                return feedbackResponse
+                
 
             case "dislike_track":
-                # Dislike currently playing track
-                print("Someone dislikes this track")
-                return None  # Placeholder for disliking functionality
+                feedbackResponse = self.check_currently_playing()
+                self.song_feedback.dislike()
+                return feedbackResponse
 
             case "search":
                 query = data.get("query", "")
                 return self.search_song(query)
             case _:
                 return {"status": False, "error": f"Unknown action: {action}"}
+
+    def check_currently_playing(self):
+        current = self._currently_playing or self._spotify_connection.get_currently_playing()
+        if not current or not current.get("item"):
+            return {"status": False, "error": "No track is currently playing."}
+
+        track_id = current["item"].get("id")
+        if not track_id:
+            return {"status": False, "error": "Unable to determine track ID."}
+        return {"status": True}
 
     def clean_currently_playing(self):
         """
