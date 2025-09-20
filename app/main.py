@@ -1,12 +1,11 @@
 from websockets.asyncio.server import serve
-import asyncio
+import asyncio, json, signal, time
+
 from app.core.init_app import generate_room_code, start_spotify_client, establish_spotify_connection
-from app.services.currency_manager import CurrencyManager
-import json
 from app.config.settings import ports
-import signal
-from app.handlers.client_handler import ClientHandler 
-import time
+from app.services.currency_manager import CurrencyManager
+from app.services.playback_manager import PlaybackManager
+from app.handlers.client_handler import ClientHandler
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
@@ -15,34 +14,19 @@ connected_clients = set()
 currency_manager = CurrencyManager()
 client_handler = ClientHandler(currency_manager)
 
+# Playback manager orchestrates queue + feedback + rewards
+playback_manager = PlaybackManager(
+    client_handler._spotify_connection,
+    client_handler._songQueue,
+    client_handler.song_feedback,
+    currency_manager
+)
+
 async def poll_currently_playing():
     while True:
         try:
-            info = client_handler._spotify_connection.get_currently_playing()
-            if info and info.get("is_playing"):
-                track_id = info["item"]["id"]
-                
-                # Check if the first item in our queue matches the current track
-                first_in_queue = client_handler._songQueue.peek_first()
-                if first_in_queue == track_id:
-                    removed = client_handler._songQueue.remove_first(track_id)
-                    if removed:
-                        print(f"Removed {track_id} from queue")
-                        await broadcast_queue_length()
-
-                # Always reset feedback when track changes OR when queue advances
-                client_handler.song_feedback.set_current_track(track_id)
-
-                # Sleep until near the end of the song
-
-                duration = info["item"]["duration_ms"]
-                progress = info.get("progress_ms", 0)
-                time_left = max((duration - progress) / 1000.0 - 2, 1)
-                print(f"Song playing, polling again in {time_left:.1f} seconds")
-                await asyncio.sleep(time_left)
-            else:
-                print("Nothing playing, polling again in 5 seconds")
-                await asyncio.sleep(5)
+            sleep_time = await playback_manager.poll_currently_playing(broadcast_queue_length)
+            await asyncio.sleep(sleep_time)
         except Exception as e:
             print("Error polling currently playing:", e)
             await asyncio.sleep(5)
@@ -50,40 +34,28 @@ async def poll_currently_playing():
 async def broadcast_queue_length():
     queue_length = client_handler.get_queue_length()
     payload = json.dumps({"queue_length": queue_length})
-    targets = list(connected_clients)  # snapshot to avoid concurrent modification
+    targets = list(connected_clients)
     print(f"Broadcasting queue length {queue_length} to {len(targets)} clients")
 
-    results = await asyncio.gather(
-        *(safe_send(ws, payload) for ws in targets),
-        return_exceptions=True,
-    )
-
+    results = await asyncio.gather(*(safe_send(ws, payload) for ws in targets), return_exceptions=True)
     for ws, result in zip(targets, results):
         if isinstance(result, Exception):
             print(f"Pruning client {ws}: {result}")
             connected_clients.discard(ws)
 
 async def safe_send(ws, payload):
-    await ws.send(payload)  # exceptions bubble up to broadcast
+    await ws.send(payload)
 
 async def client_connector(websocket):
     connected_clients.add(websocket)
     currency_manager.register_client(websocket.id)
     try:
-        try:
-            currently_playing = client_handler.clean_currently_playing()
-        except Exception as e:
-            print("Error getting currently playing track:", e)
-            currently_playing = {}
-
-        # Unicast initial state to this client
+        currently_playing = client_handler.clean_currently_playing() or {}
         await websocket.send(json.dumps({
-            **(currently_playing or {}), 
+            **currently_playing,
             "queue_length": client_handler.get_queue_length(),
             "tokens": currency_manager.get_balance(websocket.id)
         }))
-
-        # Optionally also broadcast so everyone else sees updates triggered by this join
         await broadcast_queue_length()
 
         async for raw in websocket:
@@ -94,15 +66,13 @@ async def client_connector(websocket):
 
     except Exception as e:
         print("Error in client_connector:", e)
-
     finally:
-        currency_manager.remove_client(websocket.id or id(websocket))
+        currency_manager.remove_client(websocket.id)
         connected_clients.discard(websocket)
 
-
 async def start_websocket_server():
-    async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]) as server:
-        print("Session started on port " + str(ports["WEBSOCKET_SERVER_PORT"]) + ". Room code: " + room_code)
+    async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]):
+        print(f"Session started on port {ports['WEBSOCKET_SERVER_PORT']}. Room code: {room_code}")
         await shutdown_event.wait()
 
 async def main():

@@ -43,9 +43,9 @@ class ClientHandler:
                 if not success:
                     return {"status": False, "error": "Insufficient tokens", "balance": new_balance}
 
-                response = self._spotify_connection.add_track_by_id(track_id, websocket_id)
+                response = self._spotify_connection.add_track_by_id(track_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
-                    self._songQueue.add(track_id)
+                    self._songQueue.add(track_id, websocket_id)
                     return {"status": True, "tokens": new_balance}
                 else:
                     return {"status": False, "error": "Failed to add track", "tokens": new_balance}

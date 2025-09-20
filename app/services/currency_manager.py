@@ -36,3 +36,10 @@ class CurrencyManager:
             print(f"Client {client_id} spent {cost} tokens, new balance: {self._balances[client_id]}")
             return True, self._balances[client_id]
         return False, balance
+    
+    def reward_for_popular_track(self, owner_id: str, tokens: int = settings.POPULAR_TRACK_REWARD) -> int:
+        """Reward the owner of a track with tokens when it reaches supermajority likes."""
+        if owner_id not in self._balances:
+            return 0
+        self._balances[owner_id] += tokens
+        return self._balances[owner_id]

@@ -6,7 +6,7 @@ class SongQueue:
         self._queue.append({"track_id": track_id, "owner": client_id})
 
     def remove_first(self, track_id):
-        if self._queue and self._queue[0] == track_id:
+        if self._queue and self._queue[0]["track_id"] == track_id:
             self._queue.pop(0)
             return True
         return False
