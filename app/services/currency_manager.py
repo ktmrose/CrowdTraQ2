@@ -43,3 +43,9 @@ class CurrencyManager:
             return 0
         self._balances[owner_id] += tokens
         return self._balances[owner_id]
+    
+    def add_tokens(self, client_id, tokens: int):
+        """Add tokens to a client's balance."""
+        if client_id in self._balances:
+            self._balances[client_id] += tokens
+            print(f"Client {client_id} received {tokens} tokens, new balance: {self._balances[client_id]}")

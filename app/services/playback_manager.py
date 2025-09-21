@@ -1,6 +1,6 @@
 # app/services/playback_manager.py
 
-import asyncio
+from app.config import settings
 
 class PlaybackManager:
     def __init__(self, spotify_connection, song_queue, song_feedback, currency_manager):
@@ -36,7 +36,8 @@ class PlaybackManager:
         print("Nothing playing, polling again in 5 seconds")
         return 5  # nothing playing, poll again in 5s
 
-    def reward_current_owner(self, tokens: int = 2):
-        if self.current_owner:
-            return self.currency.reward_for_popular_track(self.current_owner, tokens)
+    def request_reward(self, total_clients: int):
+        if total_clients > 0 and self.feedback.likes > total_clients * 0.66:
+            self.currency.add_tokens(self.current_owner, settings.POPULAR_TRACK_REWARD)
+            print(f"Rewarded {self.current_owner} with {settings.POPULAR_TRACK_REWARD} tokens for popular track")
         return None

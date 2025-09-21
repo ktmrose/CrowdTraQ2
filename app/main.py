@@ -59,7 +59,15 @@ async def client_connector(websocket):
         await broadcast_queue_length()
 
         async for raw in websocket:
-            response = client_handler.message_handler(json.loads(raw), websocket.id)
+            message = json.loads(raw)
+            response = client_handler.message_handler(message, websocket.id)
+
+            if response.get("status") and message.get("action") == "like_track":
+                new_balance = playback_manager.request_reward(len(connected_clients))
+                if new_balance is not None:
+                    print(f"Rewarded current owner. New balance: {new_balance}")
+                    await websocket.send(json.dumps({"tokens": currency_manager.get_balance(websocket.id)}))
+
             if response.get("status"):
                 await broadcast_queue_length()
             await websocket.send(json.dumps(response))

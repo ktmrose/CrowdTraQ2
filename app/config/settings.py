@@ -5,6 +5,7 @@ api = {
     "track_search": "https://api.spotify.com/v1/search",
     "track_lookup": "https://api.spotify.com/v1/tracks/",
     "add_to_queue": "https://api.spotify.com/v1/me/player/queue",
+    "next_song": "https://api.spotify.com/v1/me/player/next",
 }
 
 request_info = {
@@ -16,6 +17,6 @@ ports = {
     "SPOTIFY_CLIENT_PORT": 8081
 }
 
-STARTING_TOKENS = 5
+STARTING_TOKENS = 10 # change to 5 for beta test
 COST_MODIFIER = 2
 POPULAR_TRACK_REWARD = 2
