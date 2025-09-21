@@ -11,30 +11,60 @@ class PlaybackManager:
         self.current_owner = None
         self.last_track_id = None
 
+    def _get_current_track_id(self, info: dict) -> str | None:
+        if not info or not info.get("is_playing"):
+            return None
+        return info["item"]["id"]
+
+    async def _handle_queue_and_owner(self, track_id: str, broadcast_queue_length, force=False):
+        """
+        Update current_owner based on the queue.
+        - If the first item matches the current track, pop it and set owner.
+        - If force=True, treat it as a new play even if track_id == last_track_id
+        (used for duplicate songs queued back-to-back).
+        """
+        first_in_queue = self.queue.peek_first()
+        if first_in_queue and first_in_queue["track_id"] == track_id:
+            removed = self.queue.remove_first(track_id)
+            if removed:
+                self.current_owner = removed["owner"]
+                print(f"Track {track_id} dequeued. Owner is now {self.current_owner}")
+                await broadcast_queue_length()
+        elif force:
+            # Explicit reset even if not in queue
+            self.current_owner = None
+        # else: leave current_owner unchanged
+
+
+    def _calculate_sleep_time(self, info: dict) -> float:
+        duration = info["item"]["duration_ms"]
+        progress = info.get("progress_ms", 0)
+        return max((duration - progress) / 1000.0 - 1, 0.5)
+
+
     async def poll_currently_playing(self, broadcast_queue_length):
         info = self.spotify.get_currently_playing()
-        if info and info.get("is_playing"):
-            track_id = info["item"]["id"]
-            # Check if the first item in our queue matches the current track
-            first_in_queue = self.queue.peek_first()
-            if first_in_queue and first_in_queue["track_id"] == track_id:
-                print(f"Current track {track_id} matches queue front. Removing from queue.")
-                removed = self.queue.remove_first(track_id)
-                if removed:
-                    print(f"Removed {track_id} from queue")
-                    await broadcast_queue_length()
+        track_id = self._get_current_track_id(info)
 
-            # Always reset feedback when track changes OR when queue advances
+        if not track_id:
+            print("Nothing playing, polling again in 5 seconds")
+            return 5
+
+        # Case 1: brand new track ID
+        if track_id != self.last_track_id:
+            await self._handle_queue_and_owner(track_id, broadcast_queue_length)
             self.feedback.set_current_track(track_id)
+            self.last_track_id = track_id
 
-            # Calculate sleep time until near end of track
-            duration = info["item"]["duration_ms"]
-            progress = info.get("progress_ms", 0)
-            time_left = max((duration - progress) / 1000.0 - 1, .5)
-            return time_left
+        # Case 2: same track ID, but another queued entry exists
+        elif self.queue.peek_first() and self.queue.peek_first()["track_id"] == track_id:
+            await self._handle_queue_and_owner(track_id, broadcast_queue_length)
+            self.feedback.set_current_track(track_id)  # reset feedback for new play
 
-        print("Nothing playing, polling again in 5 seconds")
-        return 5  # nothing playing, poll again in 5s
+        # Case 3: same track still playing, no queue entry → do nothing
+
+        return self._calculate_sleep_time(info)
+
 
     def request_reward(self, total_clients: int):
         if total_clients > 0 and self.feedback.likes > total_clients * 0.66:

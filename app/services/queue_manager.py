@@ -7,9 +7,8 @@ class SongQueue:
 
     def remove_first(self, track_id):
         if self._queue and self._queue[0]["track_id"] == track_id:
-            self._queue.pop(0)
-            return True
-        return False
+            return self._queue.pop(0)
+        return None
 
     def peek_first(self):
         return self._queue[0] if self._queue else None
