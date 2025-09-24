@@ -6,6 +6,7 @@ from app.config.settings import ports
 from app.services.currency_manager import CurrencyManager
 from app.services.playback_manager import PlaybackManager
 from app.handlers.client_handler import ClientHandler
+from app.services.identity_manager import IdentityManager
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
@@ -13,6 +14,7 @@ connected_clients = {}
 
 currency_manager = CurrencyManager()
 client_handler = ClientHandler(currency_manager)
+identity_manager = IdentityManager()
 
 # Playback manager orchestrates queue + feedback + rewards
 playback_manager = PlaybackManager(
@@ -54,37 +56,42 @@ async def safe_send(ws, payload):
     await ws.send(payload)
 
 async def client_connector(websocket):
-    connected_clients[websocket.id] = websocket
+
+    raw = await websocket.recv()
+    hello = json.loads(raw)
+    session_id = identity_manager.register(websocket, hello.get("sessionId"))
     currency_manager.register_client(websocket.id)
     try:
         currently_playing = client_handler.clean_currently_playing() or {}
         await websocket.send(json.dumps({
+            "sessionId": session_id,
             **currently_playing,
             "queue_length": client_handler.get_queue_length(),
             "tokens": currency_manager.get_balance(websocket.id)
         }))
-        await broadcast_queue_length()
 
         async for raw in websocket:
             message = json.loads(raw)
             response = client_handler.message_handler(message, websocket.id)
 
             if response.get("status") and message.get("action") == "like_track":
-                new_balance = playback_manager.request_reward(len(connected_clients))
+                new_balance = playback_manager.request_reward(len(identity_manager.all_session_ids()))
                 owner_id = playback_manager.current_owner
-                if new_balance is not None and owner_id in connected_clients:
-                    print("Sending reward to:", owner_id, "clients:", list(connected_clients.keys()))
-                    await connected_clients[owner_id].send(json.dumps({"tokens": currency_manager.get_balance(owner_id)}))
+                if new_balance is not None and owner_id:
+                    await identity_manager.send_to(owner_id, {
+                        "event": "reward",
+                        "tokens": currency_manager.get_balance(owner_id)
+                    })
 
             if response.get("status"):
-                await broadcast_queue_length()
+                await identity_manager.broadcast({"queue_length": client_handler.get_queue_length()})
             await websocket.send(json.dumps(response))
 
     except Exception as e:
         print("Error in client_connector:", e)
     finally:
         currency_manager.remove_client(websocket.id)
-        connected_clients.pop(websocket.id, None)
+        identity_manager.unregister(session_id)
 
 async def start_websocket_server():
     async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]):
@@ -111,7 +118,10 @@ async def main():
         print("Spotify client thread has been shut down.")
         shutdown_event.set()
         shutdown_end = time.time()
-        print(f"Shutdown took {shutdown_end - shutdown_start:.2f} seconds.")
+        elapsed = shutdown_end - shutdown_start
+        minutes, seconds = divmod(int(elapsed), 60)
+        print(f"Shutdown took {minutes}m {seconds}s.")
+
 
 def handle_exit(signum, frame):
     print("Caught termination signal. Shutting down...")
