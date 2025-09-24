@@ -9,7 +9,7 @@ from app.handlers.client_handler import ClientHandler
 
 room_code = generate_room_code(4)
 shutdown_event = asyncio.Event()
-connected_clients = set()
+connected_clients = {}
 
 currency_manager = CurrencyManager()
 client_handler = ClientHandler(currency_manager)
@@ -34,20 +34,27 @@ async def poll_currently_playing():
 async def broadcast_queue_length():
     queue_length = client_handler.get_queue_length()
     payload = json.dumps({"queue_length": queue_length})
-    targets = list(connected_clients)
+    targets = list(connected_clients.values())
     print(f"Broadcasting queue length {queue_length} to {len(targets)} clients")
 
     results = await asyncio.gather(*(safe_send(ws, payload) for ws in targets), return_exceptions=True)
     for ws, result in zip(targets, results):
         if isinstance(result, Exception):
-            print(f"Pruning client {ws}: {result}")
-            connected_clients.discard(ws)
+            bad_id = None
+            for cid, sock in connected_clients.items():
+                if sock is ws:
+                    bad_id = cid
+                    break
+            print(f"Pruning client {bad_id}: {result}")
+            if bad_id:
+                connected_clients.pop(bad_id, None)
+
 
 async def safe_send(ws, payload):
     await ws.send(payload)
 
 async def client_connector(websocket):
-    connected_clients.add(websocket)
+    connected_clients[websocket.id] = websocket
     currency_manager.register_client(websocket.id)
     try:
         currently_playing = client_handler.clean_currently_playing() or {}
@@ -64,9 +71,10 @@ async def client_connector(websocket):
 
             if response.get("status") and message.get("action") == "like_track":
                 new_balance = playback_manager.request_reward(len(connected_clients))
-                if new_balance is not None:
-                    print(f"Rewarded current owner. New balance: {new_balance}")
-                    await websocket.send(json.dumps({"tokens": currency_manager.get_balance(websocket.id)}))
+                owner_id = playback_manager.current_owner
+                if new_balance is not None and owner_id in connected_clients:
+                    print("Sending reward to:", owner_id, "clients:", list(connected_clients.keys()))
+                    await connected_clients[owner_id].send(json.dumps({"tokens": currency_manager.get_balance(owner_id)}))
 
             if response.get("status"):
                 await broadcast_queue_length()
@@ -76,7 +84,7 @@ async def client_connector(websocket):
         print("Error in client_connector:", e)
     finally:
         currency_manager.remove_client(websocket.id)
-        connected_clients.discard(websocket)
+        connected_clients.pop(websocket.id, None)
 
 async def start_websocket_server():
     async with serve(client_connector, "localhost", ports["WEBSOCKET_SERVER_PORT"]):

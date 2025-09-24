@@ -28,7 +28,6 @@ class PlaybackManager:
             removed = self.queue.remove_first(track_id)
             if removed:
                 self.current_owner = removed["owner"]
-                print(f"Track {track_id} dequeued. Owner is now {self.current_owner}")
                 await broadcast_queue_length()
         elif force:
             # Explicit reset even if not in queue
@@ -69,5 +68,5 @@ class PlaybackManager:
     def request_reward(self, total_clients: int):
         if total_clients > 0 and self.feedback.likes > total_clients * 0.66:
             self.currency.add_tokens(self.current_owner, settings.POPULAR_TRACK_REWARD)
-            print(f"Rewarded {self.current_owner} with {settings.POPULAR_TRACK_REWARD} tokens for popular track")
+            return self.currency.get_balance(self.current_owner)
         return None
