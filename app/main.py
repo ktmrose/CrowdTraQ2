@@ -56,19 +56,21 @@ async def safe_send(ws, payload):
     await ws.send(payload)
 
 async def client_connector(websocket):
-
     raw = await websocket.recv()
     hello = json.loads(raw)
     session_id = identity_manager.register(websocket, hello.get("sessionId"))
+
     currency_manager.register_client(session_id)
     try:
         currently_playing = client_handler.clean_currently_playing() or {}
-        await websocket.send(json.dumps({
+        init_tokens = currency_manager.get_balance(session_id)
+        init_payload = {
             "sessionId": session_id,
             **currently_playing,
             "queue_length": client_handler.get_queue_length(),
-            "tokens": currency_manager.get_balance(session_id)
-        }))
+            "tokens": init_tokens
+        }
+        await websocket.send(json.dumps(init_payload))
 
         async for raw in websocket:
             message = json.loads(raw)
@@ -77,20 +79,24 @@ async def client_connector(websocket):
             if response.get("status") and message.get("action") == "like_track":
                 new_balance = playback_manager.request_reward(len(identity_manager.all_session_ids()))
                 owner_id = playback_manager.current_owner
+
                 if new_balance is not None and owner_id:
+                    owner_tokens = currency_manager.get_balance(owner_id)
                     await identity_manager.send_to(owner_id, {
                         "event": "reward",
-                        "tokens": currency_manager.get_balance(owner_id)
+                        "tokens": owner_tokens
                     })
 
             if response.get("status"):
-                await identity_manager.broadcast({"queue_length": client_handler.get_queue_length()})
+                ql = client_handler.get_queue_length()
+                await identity_manager.broadcast({"queue_length": ql})
+
             await websocket.send(json.dumps(response))
 
     except Exception as e:
         print("Error in client_connector:", e)
     finally:
-        currency_manager.remove_client(websocket.id)
+        currency_manager.remove_client(session_id)
         identity_manager.unregister(session_id)
 
 async def start_websocket_server():

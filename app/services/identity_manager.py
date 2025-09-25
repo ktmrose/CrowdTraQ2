@@ -33,7 +33,8 @@ class IdentityManager:
         return list(self._clients.values())
 
     def all_session_ids(self):
-        return list(self._clients.keys())
+        sids = list(self._clients.keys())
+        return sids
 
     async def send_to(self, session_id: str, payload: dict):
         """Send a JSON payload to a specific client if connected."""

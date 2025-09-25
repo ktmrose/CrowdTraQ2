@@ -6,9 +6,10 @@ class CurrencyManager:
         self._balances = {}
 
     def register_client(self, client_id):
-        """Initialize a client with starting tokens."""
-        if client_id not in self._balances:
+        exists = client_id in self._balances
+        if not exists:
             self._balances[client_id] = settings.STARTING_TOKENS
+            print(f"[Currency] init balance: {client_id} -> {self._balances[client_id]}")
 
     def remove_client(self, client_id):
         """Clean up when a client disconnects."""
@@ -16,7 +17,8 @@ class CurrencyManager:
         pass
 
     def get_balance(self, client_id):
-        return self._balances.get(client_id, 0)
+        bal = self._balances.get(client_id, 0)
+        return bal
 
     def calculate_cost(self, queue_length: int) -> int:
         """Cost = 0 if queue empty, else queueLength + costModifier (modifier doubles every 5 songs)."""
