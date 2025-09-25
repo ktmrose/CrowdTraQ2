@@ -16,7 +16,6 @@ class IdentityManager:
         If no session_id provided, generate one.
         Returns the session_id used.
         """
-        print(session_id)
         sid = session_id or self.create_session_id()
         self._clients[sid] = websocket
         return sid

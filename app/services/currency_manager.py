@@ -7,11 +7,13 @@ class CurrencyManager:
 
     def register_client(self, client_id):
         """Initialize a client with starting tokens."""
-        self._balances[client_id] = settings.STARTING_TOKENS
+        if client_id not in self._balances:
+            self._balances[client_id] = settings.STARTING_TOKENS
 
     def remove_client(self, client_id):
         """Clean up when a client disconnects."""
-        self._balances.pop(client_id, None)
+        # not sure if needed since we want to allow client reconnect
+        pass
 
     def get_balance(self, client_id):
         return self._balances.get(client_id, 0)

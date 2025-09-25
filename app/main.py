@@ -60,19 +60,19 @@ async def client_connector(websocket):
     raw = await websocket.recv()
     hello = json.loads(raw)
     session_id = identity_manager.register(websocket, hello.get("sessionId"))
-    currency_manager.register_client(websocket.id)
+    currency_manager.register_client(session_id)
     try:
         currently_playing = client_handler.clean_currently_playing() or {}
         await websocket.send(json.dumps({
             "sessionId": session_id,
             **currently_playing,
             "queue_length": client_handler.get_queue_length(),
-            "tokens": currency_manager.get_balance(websocket.id)
+            "tokens": currency_manager.get_balance(session_id)
         }))
 
         async for raw in websocket:
             message = json.loads(raw)
-            response = client_handler.message_handler(message, websocket.id)
+            response = client_handler.message_handler(message, session_id)
 
             if response.get("status") and message.get("action") == "like_track":
                 new_balance = playback_manager.request_reward(len(identity_manager.all_session_ids()))

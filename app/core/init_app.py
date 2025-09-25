@@ -39,6 +39,4 @@ def start_spotify_client():
 
 def establish_spotify_connection():
     spotify_connection = SpotifyConnectionManager().get_instance()
-    # spotify_connection.initialize_general_access_token()
-    # print(spotify_connection.spotify_general_token)
     print("Go to this URL to authorize your app:", spotify_connection.get_authorization_url())
