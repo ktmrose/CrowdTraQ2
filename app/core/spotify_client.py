@@ -126,3 +126,12 @@ class SpotifyConnection:
         }
         response = requests.post(api["add_to_queue"], headers=headers, params=params)
         return response
+    
+    def skip_track(self):
+        self.ensure_token_valid()
+        headers = {
+            "Authorization": f"Bearer {self.spotify_user_token}",
+            "Content-Type": "application/json"
+        }
+        response = requests.post(api["next_song"], headers=headers)
+        return response

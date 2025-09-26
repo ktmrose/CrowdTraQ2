@@ -76,18 +76,15 @@ async def client_connector(websocket):
             message = json.loads(raw)
             response = client_handler.message_handler(message, session_id)
 
-            if response.get("status") and message.get("action") == "like_track":
-                new_balance = playback_manager.request_reward(len(identity_manager.all_session_ids()))
-                owner_id = playback_manager.current_owner
-
-                if new_balance is not None and owner_id:
-                    owner_tokens = currency_manager.get_balance(owner_id)
-                    await identity_manager.send_to(owner_id, {
-                        "event": "reward",
-                        "tokens": owner_tokens
-                    })
-
             if response.get("status"):
+                event = await playback_manager.handle_feedback(
+                    message.get("action"),
+                    len(identity_manager.all_session_ids()),
+                    broadcast_queue_length
+                )
+                if event:
+                    await identity_manager.broadcast(event)
+
                 ql = client_handler.get_queue_length()
                 await identity_manager.broadcast({"queue_length": ql})
 

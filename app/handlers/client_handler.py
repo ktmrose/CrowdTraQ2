@@ -51,15 +51,13 @@ class ClientHandler:
                     return {"status": False, "error": "Failed to add track", "tokens": new_balance}
 
             case "like_track":
-                feedbackResponse = self.check_currently_playing()
                 self.song_feedback.like()
-                return feedbackResponse
+                return self.check_currently_playing()
                 
 
             case "dislike_track":
-                feedbackResponse = self.check_currently_playing()
                 self.song_feedback.dislike()
-                return feedbackResponse
+                return self.check_currently_playing()
 
             case "search":
                 query = data.get("query", "")

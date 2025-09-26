@@ -64,9 +64,34 @@ class PlaybackManager:
 
         return self._calculate_sleep_time(info)
 
-
-    def request_reward(self, total_clients: int):
-        if total_clients > 0 and self.feedback.likes > total_clients * 0.66:
+    async def handle_feedback(self, action: str, total_clients: int, broadcast_queue_length):
+        if action == "like_track" and total_clients > 0 and self.feedback.likes > total_clients * 0.66:
             self.currency.add_tokens(self.current_owner, settings.POPULAR_TRACK_REWARD)
-            return self.currency.get_balance(self.current_owner)
+            return {
+                "event": "reward",
+                "owner": self.current_owner,
+                "tokens": self.currency.get_balance(self.current_owner)
+            }
+
+        if action == "dislike_track" and total_clients > 0 and self.feedback.dislikes > total_clients * 0.66:
+            self.spotify.skip_track()
+            # immediately re‑poll to update state and broadcast new track
+            await self.poll_currently_playing(broadcast_queue_length)
+            info = self.spotify.get_currently_playing()
+            return {
+                "event": "track_skipped",
+                "currently_playing": {
+                    "track_name": info["item"]["name"],
+                    "artists": [a["name"] for a in info["item"]["artists"]],
+                    "album": info["item"]["album"]["name"],
+                    "album_art": info["item"]["album"]["images"][0]["url"],
+                    "duration_ms": info["item"]["duration_ms"],
+                    "progress_ms": info.get("progress_ms"),
+                    "is_playing": info.get("is_playing"),
+                    "track_id": info["item"]["id"],
+                    "uri": info["item"]["uri"],
+                }
+            }
+
+
         return None
