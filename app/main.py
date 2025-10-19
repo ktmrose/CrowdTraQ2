@@ -64,11 +64,13 @@ async def client_connector(websocket):
     try:
         currently_playing = client_handler.clean_currently_playing() or {}
         init_tokens = currency_manager.get_balance(session_id)
+        client_vote = client_handler.song_feedback.get_vote(session_id)
         init_payload = {
             "sessionId": session_id,
             **currently_playing,
             "queue_length": client_handler.get_queue_length(),
-            "tokens": init_tokens
+            "tokens": init_tokens,
+            "client_vote": client_vote
         }
         await websocket.send(json.dumps(init_payload))
 

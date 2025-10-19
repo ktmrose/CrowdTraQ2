@@ -21,21 +21,29 @@ class SongQueue:
     
 class SongFeedback:
     def __init__(self):
-        self._current_track_id = None
-        self.likes = 0
-        self.dislikes = 0
+        self.current_track_id = None
+        self.votes = {}  # { session_id: "like" | "dislike" }
 
-    def set_current_track(self, track_id):
-        if track_id != self._current_track_id:
-            self._current_track_id = track_id
-            self.likes = 0
-            self.dislikes = 0
+    def set_current_track(self, track_id: str):
+        if track_id != self.current_track_id:
+            # reset votes when track changes
+            self.current_track_id = track_id
+            self.votes.clear()
 
-    def like(self):
-        self.likes += 1
+    def like(self, session_id: str):
+        self.votes[session_id] = "like"
 
-    def dislike(self):
-        self.dislikes += 1
+    def dislike(self, session_id: str):
+        self.votes[session_id] = "dislike"
 
-    def get_feedback(self):
-        return {"likes": self.likes, "dislikes": self.dislikes}
+    def get_vote(self, session_id: str) -> str | None:
+        """Return 'like', 'dislike', or None if this client hasn't voted."""
+        return self.votes.get(session_id)
+
+    @property
+    def likes(self) -> int:
+        return sum(1 for v in self.votes.values() if v == "like")
+
+    @property
+    def dislikes(self) -> int:
+        return sum(1 for v in self.votes.values() if v == "dislike")
