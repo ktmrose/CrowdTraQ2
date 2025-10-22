@@ -89,7 +89,7 @@ class ClientHandler:
         track_id = current["item"].get("id")
         if not track_id:
             return self._error(code=INVALID_TRACK_ID, message="Unable to determine track ID.")
-        return {"status": True}
+        return {"success": True}
 
     def _error(self, code: str, message: str, details: dict | None = None):
         return {

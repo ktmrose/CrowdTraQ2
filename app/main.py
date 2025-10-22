@@ -69,6 +69,7 @@ async def client_connector(websocket):
             "sessionId": session_id,
             **currently_playing,
             "queue_length": client_handler.get_queue_length(),
+            "cost": currency_manager.calculate_cost(client_handler.get_queue_length()),
             "tokens": init_tokens,
             "client_vote": client_vote
         }
@@ -88,7 +89,7 @@ async def client_connector(websocket):
                     await identity_manager.broadcast(event)
 
                 ql = client_handler.get_queue_length()
-                await identity_manager.broadcast({"queue_length": ql})
+                await identity_manager.broadcast({"queue_length": ql, "cost": currency_manager.calculate_cost(ql)})
 
             await websocket.send(json.dumps(response))
 
