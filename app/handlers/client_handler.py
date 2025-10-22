@@ -1,5 +1,13 @@
 from app.services.spotify_manager import SpotifyConnectionManager
 from app.services.queue_manager import SongQueue, SongFeedback
+from app.config.settings import (
+    QUEUE_INSUFFICIENT_TOKENS,
+    INVALID_TRACK_ID,
+    SPOTIFY_API_ERROR,
+    UNKNOWN_ACTION,
+    GENERAL_ERROR,
+    NO_TRACK_PLAYING,
+)
 class ClientHandler:
 
     def __init__(self, currency_manager):
@@ -21,9 +29,9 @@ class ClientHandler:
         self._spotify_connection = SpotifyConnectionManager.get_instance()
 
         if not isinstance(message, dict):
-            return {"error": "Message must be a JSON object."}
+            return self._error(code=GENERAL_ERROR, message="Message must be a JSON object.")
         elif "action" not in message:
-            return {"error": "Invalid message format. 'action' key is required."}
+            return self._error(code=UNKNOWN_ACTION, message="Invalid message format. 'action' key is required.")
 
         action = message["action"]
         data = message.get("data", {})
@@ -35,20 +43,28 @@ class ClientHandler:
             case "add_track":
                 track_id = data.get("track_id")
                 if not track_id:
-                    return {"status": False, "error": "Missing 'track_id'"}
+                    return self._error(code=INVALID_TRACK_ID, message="Missing 'track_id' in request.")
 
                 success, new_balance = self.currency_manager.try_spend(client_id, self._songQueue.length())
 
                 print(f"Client {client_id} attempting to add track {track_id}. Success: {success}, New Balance: {new_balance}")
                 if not success:
-                    return {"status": False, "error": "Insufficient tokens", "balance": new_balance}
+                    return self._error(
+                        code=QUEUE_INSUFFICIENT_TOKENS,
+                        message="You don\'t have enough tokens to add this song.",
+                        details={"requiredTokens": self.currency_manager.calculate_cost(self._songQueue.length()), "availableTokens": new_balance}
+                    )
 
                 response = self._spotify_connection.add_track_by_id(track_id)
                 if hasattr(response, "status_code") and response.status_code == 200:
                     self._songQueue.add(track_id, client_id)
-                    return {"status": True, "tokens": new_balance}
+                    return {"success": True, "tokens": new_balance}
                 else:
-                    return {"status": False, "error": "Failed to add track", "tokens": new_balance}
+                    return self._error(
+                        code=SPOTIFY_API_ERROR,
+                        message="Failed to add track to Spotify queue.",
+                        details={"tokens": new_balance}
+                    )
 
             case "like_track":
                 self.song_feedback.like(client_id)
@@ -63,17 +79,27 @@ class ClientHandler:
                 query = data.get("query", "")
                 return self.search_song(query)
             case _:
-                return {"status": False, "error": f"Unknown action: {action}"}
+                return self._error(code=UNKNOWN_ACTION, message=f"Unknown action: {action}")
 
     def check_currently_playing(self):
         current = self._currently_playing or self._spotify_connection.get_currently_playing()
         if not current or not current.get("item"):
-            return {"status": False, "error": "No track is currently playing."}
+            return self._error(code=NO_TRACK_PLAYING, message="No track is currently playing.")
 
         track_id = current["item"].get("id")
         if not track_id:
-            return {"status": False, "error": "Unable to determine track ID."}
+            return self._error(code=INVALID_TRACK_ID, message="Unable to determine track ID.")
         return {"status": True}
+
+    def _error(self, code: str, message: str, details: dict | None = None):
+        return {
+            "success": False,
+            "error": {
+                "code": code,
+                "message": message,
+                "details": details or {}
+            }
+        }
 
     def clean_currently_playing(self):
         """
@@ -84,7 +110,7 @@ class ClientHandler:
 
         self._currently_playing = self._spotify_connection.get_currently_playing()
         if self._currently_playing is None:
-            return None
+            return self._error(code=NO_TRACK_PLAYING, message="No track is currently playing.")
         
         item = self._currently_playing.get("item", {})
 

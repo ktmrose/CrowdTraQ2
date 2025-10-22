@@ -62,7 +62,7 @@ async def client_connector(websocket):
 
     currency_manager.register_client(session_id)
     try:
-        currently_playing = client_handler.clean_currently_playing() or {}
+        currently_playing = client_handler.clean_currently_playing()
         init_tokens = currency_manager.get_balance(session_id)
         client_vote = client_handler.song_feedback.get_vote(session_id)
         init_payload = {
@@ -78,7 +78,7 @@ async def client_connector(websocket):
             message = json.loads(raw)
             response = client_handler.message_handler(message, session_id)
 
-            if response.get("status"):
+            if response.get("success"):
                 event = await playback_manager.handle_feedback(
                     message.get("action"),
                     len(identity_manager.all_session_ids()),
