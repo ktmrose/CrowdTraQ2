@@ -69,12 +69,14 @@ class SpotifyConnection:
         response = requests.post(api["token"], headers=headers, data=data)
         token_info = response.json()
         self.spotify_user_token = token_info["access_token"]
+        expires_in = token_info.get("expires_in", 3600)
+        self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+        
         # Update refresh token if provided
         if "refresh_token" in token_info:
             print("getting refresh token info...")
             self.spotify_refresh_token = token_info["refresh_token"]
-            expires_in = token_info.get("expires_in", 3600)
-            self.token_expiration = time.time() + expires_in - 60  # refresh 1 min early
+
         else:
             print("No new refresh token provided; keeping the existing one or restart server.")
             print(token_info)
