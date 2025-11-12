@@ -15,6 +15,7 @@ class ClientHandler:
         self.song_feedback = SongFeedback()
         self.currency_manager = currency_manager
         self._spotify_connection = SpotifyConnectionManager.get_instance()
+        self._currently_playing = None
 
     def get_queue_length(self):
         """
