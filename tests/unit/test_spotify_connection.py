@@ -10,12 +10,12 @@ def test_spotify_connection_initial_state(monkeypatch):
     monkeypatch.setenv("spotify_client_secret", "secret456")
 
     conn = SpotifyConnection()
-    assert conn.spotify_general_token is None
-    assert conn.spotify_user_token is None
-    assert conn.spotify_refresh_token is None
-    assert conn.token_expiration == 0
-    assert conn.client_id == "abc123"
-    assert conn.client_secret == "secret456"
+    assert conn._spotify_general_token is None
+    assert conn._spotify_user_token is None
+    assert conn._spotify_refresh_token is None
+    assert conn._token_expiration == 0
+    assert conn._client_id == "abc123"
+    assert conn._client_secret == "secret456"
 
 # --- Authorization URL ---
 
@@ -47,9 +47,9 @@ def test_exchange_code_for_token_sets_tokens(mock_post, monkeypatch):
     conn = SpotifyConnection()
     conn.exchange_code_for_token("fake-code")
 
-    assert conn.spotify_user_token == "user123"
-    assert conn.spotify_refresh_token == "refresh123"
-    assert conn.token_expiration > time.time()
+    assert conn._spotify_user_token == "user123"
+    assert conn._spotify_refresh_token == "refresh123"
+    assert conn._token_expiration > time.time()
 
 # --- Refresh token ---
 
@@ -67,20 +67,20 @@ def test_refresh_access_token_updates_tokens(mock_post, monkeypatch):
     mock_post.return_value = fake_response
 
     conn = SpotifyConnection()
-    conn.spotify_refresh_token = "oldrefresh"
+    conn._spotify_refresh_token = "oldrefresh"
     conn.refresh_access_token()
 
-    assert conn.spotify_user_token == "newtoken"
-    assert conn.spotify_refresh_token == "newrefresh"
-    assert conn.token_expiration > time.time()
+    assert conn._spotify_user_token == "newtoken"
+    assert conn._spotify_refresh_token == "newrefresh"
+    assert conn._token_expiration > time.time()
 
 # --- Ensure token valid ---
 
 @patch.object(SpotifyConnection, "refresh_access_token")
 def test_ensure_token_valid_triggers_refresh(mock_refresh):
     conn = SpotifyConnection()
-    conn.spotify_user_token = None
-    conn.token_expiration = 0
+    conn._spotify_user_token = None
+    conn._token_expiration = 0
 
     conn.ensure_token_valid()
     mock_refresh.assert_called_once()
