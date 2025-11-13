@@ -16,7 +16,6 @@ async def test_message_handler_add_track(currency_manager, song_queue, song_feed
 
     assert response["success"] is True
     assert song_queue.peek_first()["track_id"] == "t123"
-
 @pytest.mark.asyncio
 async def test_message_handler_vote_track(currency_manager, song_queue, song_feedback):
     handler = ClientHandler(currency_manager)
