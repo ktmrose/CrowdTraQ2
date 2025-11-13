@@ -1,5 +1,3 @@
-# app/services/playback_manager.py
-
 from app.config import settings
 
 class PlaybackManager:
@@ -92,6 +90,5 @@ class PlaybackManager:
                     "uri": info["item"]["uri"],
                 }
             }
-
 
         return None
