@@ -1,3 +1,16 @@
+import os
+
+# Environment: dev, beta, prod
+ENV = os.getenv("APP_ENV", "dev")
+
+# Logging level defaults
+if ENV == "dev":
+    LOG_LEVEL = "DEBUG"
+elif ENV == "beta":
+    LOG_LEVEL = "INFO"
+else:  # prod
+    LOG_LEVEL = "WARNING"
+
 api = {
     "token": "https://accounts.spotify.com/api/token",
     "authorize": "https://accounts.spotify.com/authorize",
@@ -28,3 +41,6 @@ UNKNOWN_ACTION = "UNKNOWN_ACTION"
 UNKNOWN_USER = "UNKNOWN_USER"
 GENERAL_ERROR = "GENERAL_ERROR"
 NO_TRACK_PLAYING = "NO_TRACK_PLAYING"
+
+SPOTIFY_CLIENT_ID = os.getenv("spotify_client_id")
+SPOTIFY_CLIENT_SECRET = os.getenv("spotify_client_secret") 

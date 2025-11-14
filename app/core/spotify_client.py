@@ -3,15 +3,15 @@ import os
 import time
 import requests
 import urllib.parse
-from app.config.settings import api, request_info
+from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
 class SpotifyConnection:
     def __init__(self):
         self._spotify_general_token = None
         self._spotify_user_token = None
         self._spotify_refresh_token = None
-        self._client_id = os.getenv("spotify_client_id")
-        self._client_secret = os.getenv("spotify_client_secret")
+        self._client_id = SPOTIFY_CLIENT_ID
+        self._client_secret = SPOTIFY_CLIENT_SECRET
         self._token_expiration = 0
 
     # used for calls that do not require user permissions (i.e. song lookup)
