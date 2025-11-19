@@ -5,9 +5,11 @@ from flask import Flask
 from werkzeug.serving import make_server
 from threading import Thread
 from app.routes.routes import register_routes
+import logging
+
+logger = logging.getLogger("app.handlers.app.init_app")
 
 app = Flask(__name__)
-
 register_routes(app)
 
 class SpotifyConnectionThread(Thread):
@@ -18,12 +20,12 @@ class SpotifyConnectionThread(Thread):
         self.context.push()
     
     def run(self):
-        print("Starting Spotify integration thread...")
+        logger.info("[init_app] Starting Spotify integration thread...")
         self.server.serve_forever(poll_interval=0.1)
-        print("Spotify integration thread exiting...")
+        logger.info("[init_app] Spotify integration thread exiting...")
     
     def shutdown(self):
-        print("Shutting down Spotify integration thread...")
+        logger.info("[init_app] Shutting down Spotify integration thread...")
         self.server.shutdown()
 
 def generate_room_code(length):
@@ -32,11 +34,28 @@ def generate_room_code(length):
         room_code = room_code + choice(ascii_uppercase)
     return room_code
 
-def start_spotify_client():
+def start_spotify_integration():
+    """
+    Start Flask server (always) and Spotify client thread (only if tokens exist).
+    Returns a tuple (flask_thread, spotify_client_thread).
+    """
+    # Start Flask server for /callback
+    flask_thread = SpotifyConnectionThread()
+    flask_thread.start()
+
+    conn = SpotifyConnectionManager.get_instance()
+    if not conn.load_tokens():
+        logger.warning("No tokens.json found. Run admin.py authorize to complete Spotify setup.")
+        return flask_thread, None
+
+    # Start Spotify client thread if tokens are loaded
     spotify_client_thread = SpotifyConnectionThread()
     spotify_client_thread.start()
-    return spotify_client_thread
+
+    return flask_thread, spotify_client_thread
 
 def establish_spotify_connection():
     spotify_connection = SpotifyConnectionManager().get_instance()
-    print("Go to this URL to authorize your app:", spotify_connection.get_authorization_url())
+    auth_url = spotify_connection.get_authorization_url()
+    logger.info("[init_app] Authorization URL generated: ", auth_url)
+    return auth_url

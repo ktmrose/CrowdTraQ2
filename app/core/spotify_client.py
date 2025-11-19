@@ -1,8 +1,5 @@
 import base64
-import os
-import time
-import requests
-import urllib.parse
+import os, time, requests, json, urllib.parse, base64
 from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
 class SpotifyConnection:
@@ -13,6 +10,36 @@ class SpotifyConnection:
         self._client_id = SPOTIFY_CLIENT_ID
         self._client_secret = SPOTIFY_CLIENT_SECRET
         self._token_expiration = 0
+
+    @property
+    def token_info(self):
+        return {
+            "access_token": self._spotify_user_token,
+            "refresh_token": self._spotify_refresh_token,
+            "expires_at": self._token_expiration
+        }
+
+    def load_token_info(self, token_info: dict):
+        """Initialize connection from persisted token_info (tokens.json)."""
+        self._spotify_user_token = token_info.get("access_token")
+        self._spotify_refresh_token = token_info.get("refresh_token")
+        self._token_expiration = token_info.get("expires_at", 0)
+
+    def save_tokens(self, path="tokens.json"):
+        with open(path, "w") as f:
+            json.dump(self.token_info, f)
+
+    def load_tokens(self, path="tokens.json"):
+        if not os.path.exists(path):
+            return False
+        try:
+            with open(path) as f:
+                token_info = json.load(f)
+        except(json.JSONDecodeError, OSError) as e:
+            print("Error loading tokens from file:", e)
+            return False
+        self.load_token_info(token_info)
+        return True
 
     # used for calls that do not require user permissions (i.e. song lookup)
     def initialize_general_access_token(self):
@@ -54,6 +81,7 @@ class SpotifyConnection:
         expires_in = token_info["expires_in"] # 3600 seconds
         self._token_expiration = time.time() + expires_in - 60  # refresh 1 min early
         print("Spotify user token expires at: ", self._token_expiration)
+        self.save_tokens()
 
     def refresh_access_token(self):
         headers = {

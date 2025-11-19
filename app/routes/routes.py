@@ -19,4 +19,4 @@ def callback():
     spotify_connection = SpotifyConnectionManager.get_instance()
     spotify_connection.exchange_code_for_token(authorization_code)
     #TODO: make this message prettier and maybe redirect to a different page
-    return "Authorization successful! You may now close this window"
+    return "Authorization successful! You may now close this window and start the main server"

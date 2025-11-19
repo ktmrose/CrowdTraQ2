@@ -30,6 +30,7 @@ ports = {
     "SPOTIFY_CLIENT_PORT": 8081
 }
 
+TOKENS_FILE = "tokens.json"
 STARTING_TOKENS = 1 # change to 5 for beta test
 COST_MODIFIER = 2
 POPULAR_TRACK_REWARD = 2
