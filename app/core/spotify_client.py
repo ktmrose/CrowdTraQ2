@@ -1,7 +1,8 @@
 import base64
-import os, time, requests, json, urllib.parse, base64
+import os, time, requests, json, urllib.parse, base64, logging
 from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
 
+logger = logging.getLogger("app.core.spotify_client")
 class SpotifyConnection:
     def __init__(self):
         self._spotify_general_token = None

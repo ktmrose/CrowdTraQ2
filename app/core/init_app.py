@@ -7,7 +7,7 @@ from threading import Thread
 from app.routes.routes import register_routes
 import logging
 
-logger = logging.getLogger("app.handlers.app.init_app")
+logger = logging.getLogger("app.core.init_app")
 
 app = Flask(__name__)
 register_routes(app)
@@ -20,12 +20,12 @@ class SpotifyConnectionThread(Thread):
         self.context.push()
     
     def run(self):
-        logger.info("[init_app] Starting Spotify integration thread...")
+        logger.info("Starting Spotify integration thread...")
         self.server.serve_forever(poll_interval=0.1)
-        logger.info("[init_app] Spotify integration thread exiting...")
+        logger.info("Spotify integration thread exiting...")
     
     def shutdown(self):
-        logger.info("[init_app] Shutting down Spotify integration thread...")
+        logger.info("Shutting down Spotify integration thread...")
         self.server.shutdown()
 
 def generate_room_code(length):
@@ -57,5 +57,5 @@ def start_spotify_integration():
 def establish_spotify_connection():
     spotify_connection = SpotifyConnectionManager().get_instance()
     auth_url = spotify_connection.get_authorization_url()
-    logger.info("[init_app] Authorization URL generated: ", auth_url)
+    logger.info("Authorization URL generated: ", auth_url)
     return auth_url
