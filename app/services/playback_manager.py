@@ -1,4 +1,7 @@
 from app.config import settings
+import logging
+
+logger = logging.getLogger("app.core.playback_manager")
 
 class PlaybackManager:
     def __init__(self, spotify_connection, song_queue, song_feedback, currency_manager):
@@ -44,17 +47,19 @@ class PlaybackManager:
         track_id = self._get_current_track_id(info)
 
         if not track_id:
-            print("Nothing playing, polling again in 5 seconds")
+            logger.debug("Nothing playing, polling again in 5 seconds")
             return 5
 
         # Case 1: brand new track ID
         if track_id != self.last_track_id:
+            logger.info(f"New track detected: {track_id}, updating queue and owner")
             await self._handle_queue_and_owner(track_id, broadcast_queue_length)
             self.feedback.set_current_track(track_id)
             self.last_track_id = track_id
 
         # Case 2: same track ID, but another queued entry exists
         elif self.queue.peek_first() and self.queue.peek_first()["track_id"] == track_id:
+            logger.info(f"Track {track_id} replayed from queue, updating owner")
             await self._handle_queue_and_owner(track_id, broadcast_queue_length)
             self.feedback.set_current_track(track_id)  # reset feedback for new play
 
@@ -64,6 +69,7 @@ class PlaybackManager:
 
     async def handle_feedback(self, action: str, total_clients: int, broadcast_queue_length):
         if action == "like_track" and total_clients > 0 and self.feedback.likes > total_clients * 0.66:
+            logger.info("Track liked by supermajority, rewarding owner...")
             self.currency.add_tokens(self.current_owner, settings.POPULAR_TRACK_REWARD)
             return {
                 "event": "reward",
@@ -72,6 +78,7 @@ class PlaybackManager:
             }
 
         if action == "dislike_track" and total_clients > 0 and self.feedback.dislikes > total_clients * 0.66:
+            logger.info("Track disliked by supermajority, skipping...")
             self.spotify.skip_track()
             # immediately re‑poll to update state and broadcast new track
             await self.poll_currently_playing(broadcast_queue_length)

@@ -37,7 +37,7 @@ class SpotifyConnection:
             with open(path) as f:
                 token_info = json.load(f)
         except(json.JSONDecodeError, OSError) as e:
-            print("Error loading tokens from file:", e)
+            logger.error("Error loading tokens from file:", e)
             return False
         self.load_token_info(token_info)
         return True
@@ -81,7 +81,7 @@ class SpotifyConnection:
         self._spotify_refresh_token = token_info["refresh_token"]
         expires_in = token_info["expires_in"] # 3600 seconds
         self._token_expiration = time.time() + expires_in - 60  # refresh 1 min early
-        print("Spotify user token expires at: ", self._token_expiration)
+        logger.debug("Spotify user token expires at: ", self._token_expiration)
         self.save_tokens()
 
     def refresh_access_token(self):
@@ -103,16 +103,15 @@ class SpotifyConnection:
         
         # Update refresh token if provided
         if "refresh_token" in token_info:
-            print("getting refresh token info...")
+            logger.debug("getting refresh token info...")
             self._spotify_refresh_token = token_info["refresh_token"]
 
         else:
-            print("No new refresh token provided; keeping the existing one or restart server.")
-            print(token_info)
+            logger.warning("No new refresh token provided; keeping the existing one or restart server.")
 
     def ensure_token_valid(self):
         if self._spotify_user_token is None or self._token_expiration <= time.time():
-            print("token expired or not set, refreshing...")
+            logger.debug("token expired or not set, refreshing...")
             self.refresh_access_token()
     
     def get_currently_playing(self):
@@ -125,9 +124,10 @@ class SpotifyConnection:
         if response.status_code == 200:
             return response.json()
         elif response.status_code == 204:
-            print("No track currently playing.")
+            logger.debug("No track currently playing.")
             return None
         else:
+            logger.error("Error getting currently playing track:", response.status_code, response.text)
             raise Exception(f"Error getting currently playing track: {response.status_code} - {response.text}")
         
     def search_songs(self, query, type="track", limit=5):
@@ -142,8 +142,10 @@ class SpotifyConnection:
         }
         response = requests.get(api["track_search"], headers=headers, params=params)
         if response.status_code == 200:
+            logger.debug("Search songs response:", response.json())
             return response.json()
         else:
+            logger.error("Error searching for songs:", response.status_code, response.text)
             raise Exception(f"Error searching for songs: {response.status_code} - {response.text}")
         
     def add_track_by_id(self, track_id):
@@ -156,6 +158,7 @@ class SpotifyConnection:
             "uri": f"spotify:track:{track_id}"
         }
         response = requests.post(api["add_to_queue"], headers=headers, params=params)
+        logger.debug("Add track response:", response.status_code, response.text)
         return response
     
     def skip_track(self):
@@ -165,4 +168,5 @@ class SpotifyConnection:
             "Content-Type": "application/json"
         }
         response = requests.post(api["next_song"], headers=headers)
+        logger.debug("Skip track response:", response.status_code, response.text)
         return response

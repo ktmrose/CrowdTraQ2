@@ -1,5 +1,7 @@
 from app.config import settings
+import logging
 
+logger = logging.getLogger("app.core.currency_manager")
 class CurrencyManager:
     def __init__(self):
         # Track balances per client (could be websocket ID, user ID, etc.)
@@ -9,7 +11,7 @@ class CurrencyManager:
         exists = client_id in self._balances
         if not exists:
             self._balances[client_id] = settings.STARTING_TOKENS
-            print(f"[Currency] init balance: {client_id} -> {self._balances[client_id]}")
+            logger.debug(f"[Currency] init balance: {client_id} -> {self._balances[client_id]}")
 
     def remove_client(self, client_id):
         """Clean up when a client disconnects."""
@@ -37,7 +39,7 @@ class CurrencyManager:
 
         if balance >= cost:
             self._balances[client_id] = balance - cost
-            print(f"Client {client_id} spent {cost} tokens, new balance: {self._balances[client_id]}")
+            logger.debug(f"Client {client_id} spent {cost} tokens, new balance: {self._balances[client_id]}")
             return True, self._balances[client_id]
         return False, balance
     
@@ -47,6 +49,7 @@ class CurrencyManager:
             return 0
         if tokens is None:
             tokens = settings.POPULAR_TRACK_REWARD
+        logger.debug(f"Rewarding client {owner_id} with {tokens} tokens for popular track")
         self._balances[owner_id] += tokens
         return self._balances[owner_id]
     
@@ -54,4 +57,4 @@ class CurrencyManager:
         """Add tokens to a client's balance."""
         if client_id in self._balances:
             self._balances[client_id] += tokens
-            print(f"Client {client_id} received {tokens} tokens, new balance: {self._balances[client_id]}")
+            logger.debug(f"Client {client_id} received {tokens} tokens, new balance: {self._balances[client_id]}")

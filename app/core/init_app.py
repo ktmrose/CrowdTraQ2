@@ -20,12 +20,12 @@ class SpotifyConnectionThread(Thread):
         self.context.push()
     
     def run(self):
-        logger.info("Starting Spotify integration thread...")
+        logger.debug("Starting Spotify integration thread...")
         self.server.serve_forever(poll_interval=0.1)
-        logger.info("Spotify integration thread exiting...")
+        logger.debug("Spotify integration thread exiting...")
     
     def shutdown(self):
-        logger.info("Shutting down Spotify integration thread...")
+        logger.debug("Shutting down Spotify integration thread...")
         self.server.shutdown()
 
 def generate_room_code(length):
@@ -45,7 +45,7 @@ def start_spotify_integration():
 
     conn = SpotifyConnectionManager.get_instance()
     if not conn.load_tokens():
-        logger.warning("No tokens.json found. Run admin.py authorize to complete Spotify setup.")
+        logger.info("No tokens.json found. Run admin.py authorize to complete Spotify setup.")
         return flask_thread, None
 
     # Start Spotify client thread if tokens are loaded
@@ -57,5 +57,5 @@ def start_spotify_integration():
 def establish_spotify_connection():
     spotify_connection = SpotifyConnectionManager().get_instance()
     auth_url = spotify_connection.get_authorization_url()
-    logger.info("Authorization URL generated: ", auth_url)
+    logger.debug("Authorization URL generated: ", auth_url)
     return auth_url

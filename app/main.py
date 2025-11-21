@@ -36,17 +36,17 @@ async def poll_currently_playing():
             await asyncio.sleep(sleep_time)
         except Exception as e:
             if not os.path.exists(settings.TOKENS_FILE):
-                print("Spotify not authorized. Run admin.py authorize to create tokens.json.")
+                logger.info("Spotify not authorized. Run admin.py authorize to create tokens.json.")
                 return
             else: 
-                print("Error polling currently playing:", e)
+                logger.exception("Error polling currently playing:", e)
                 await asyncio.sleep(5)
 
 async def broadcast_queue_length():
     queue_length = client_handler.get_queue_length()
     payload = json.dumps({"queue_length": queue_length})
     targets = list(connected_clients.values())
-    print(f"Broadcasting queue length {queue_length} to {len(targets)} clients")
+    logger.debug(f"Broadcasting queue length {queue_length} to {len(targets)} clients")
 
     results = await asyncio.gather(*(safe_send(ws, payload) for ws in targets), return_exceptions=True)
     for ws, result in zip(targets, results):
@@ -56,7 +56,7 @@ async def broadcast_queue_length():
                 if sock is ws:
                     bad_id = cid
                     break
-            print(f"Pruning client {bad_id}: {result}")
+            logger.debug(f"Pruning client {bad_id}: {result}")
             if bad_id:
                 connected_clients.pop(bad_id, None)
 
@@ -103,14 +103,14 @@ async def client_connector(websocket):
             await websocket.send(json.dumps(response))
 
     except Exception as e:
-        print("Error in client_connector:", e)
+        logger.error("Error in client_connector:", e)
     finally:
         currency_manager.remove_client(session_id)
         identity_manager.unregister(session_id)
 
 async def start_websocket_server():
     async with serve(client_connector, "localhost", settings.ports["WEBSOCKET_SERVER_PORT"]):
-        print(f"Session started on port {settings.ports['WEBSOCKET_SERVER_PORT']} in {settings.ENV} mode.")
+        logger.info(f"Session started on port {settings.ports['WEBSOCKET_SERVER_PORT']} in {settings.ENV} mode.")
         await shutdown_event.wait()
 
 async def main():
@@ -124,7 +124,7 @@ async def main():
 
     try:
         await start_websocket_server()
-        print("Crowdtraq websocket thread shutdown...")
+        logger.debug("Crowdtraq websocket thread shutdown...")
 
     except KeyboardInterrupt:
         pass
@@ -134,30 +134,30 @@ async def main():
             poll_task.cancel()
 
         shutdown_start = time.time()
-        print("Starting shutdown procedure. This may take up to 15 minutes until I get around to fixing this")
+        logger.info("Starting shutdown procedure. This may take up to 15 minutes until I get around to fixing this")
 
         # Shut down Spotify client if it was started
         if spotify_client_thread:
             spotify_client_thread.shutdown()
             spotify_client_thread.join(timeout=5)
-            print("Spotify client thread has been shut down.")
+            logger.debug("Spotify client thread has been shut down.")
 
         # Shut down Flask server
         if flask_thread:
             flask_thread.shutdown()
             flask_thread.join(timeout=5)
-            print("Flask server thread has been shut down.")
+            logger.debug("Flask server thread has been shut down.")
 
         shutdown_event.set()
         shutdown_end = time.time()
         elapsed = shutdown_end - shutdown_start
         minutes, seconds = divmod(int(elapsed), 60)
-        print(f"Shutdown took {minutes}m {seconds}s.")
+        logger.info(f"Shutdown took {minutes}m {seconds}s.")
 
 
 
 def handle_exit(signum, frame):
-    print("Caught termination signal. Shutting down...")
+    logger.info("Caught termination signal. Shutting down...")
     shutdown_event.set()
 
 if __name__ == "__main__":

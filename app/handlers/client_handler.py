@@ -8,6 +8,9 @@ from app.config.settings import (
     GENERAL_ERROR,
     NO_TRACK_PLAYING,
 )
+import logging
+
+logger = logging.getLogger("app.core.client_handler")
 class ClientHandler:
 
     def __init__(self, currency_manager):
@@ -39,16 +42,18 @@ class ClientHandler:
 
         match action:
             case "refresh":
+                logger.debug(f"Client {client_id} requested refresh of currently playing")
                 return self.clean_currently_playing()
 
             case "add_track":
                 track_id = data.get("track_id")
                 if not track_id:
+                    logger.warning(f"Client {client_id} sent add_track without track_id")
                     return self._error(code=INVALID_TRACK_ID, message="Missing 'track_id' in request.")
 
                 success, new_balance = self.currency_manager.try_spend(client_id, self._songQueue.length())
 
-                print(f"Client {client_id} attempting to add track {track_id}. Success: {success}, New Balance: {new_balance}")
+                logger.debug(f"Client {client_id} attempting to add track {track_id}. Success: {success}, New Balance: {new_balance}")
                 if not success:
                     return self._error(
                         code=QUEUE_INSUFFICIENT_TOKENS,
@@ -61,6 +66,7 @@ class ClientHandler:
                     self._songQueue.add(track_id, client_id)
                     return {"success": True, "tokens": new_balance}
                 else:
+                    logger.error(f"Failed to add track {track_id} to Spotify queue for client {client_id}. Response: {response}")
                     return self._error(
                         code=SPOTIFY_API_ERROR,
                         message="Failed to add track to Spotify queue.",
@@ -68,18 +74,22 @@ class ClientHandler:
                     )
 
             case "like_track":
+                logger.debug(f"Client {client_id} liked the current track")
                 self.song_feedback.like(client_id)
                 return self.check_currently_playing()
                 
 
             case "dislike_track":
+                logger.debug(f"Client {client_id} disliked the current track")
                 self.song_feedback.dislike(client_id)
                 return self.check_currently_playing()
 
             case "search":
+                logger.debug(f"Client {client_id} searching for songs with query: {data.get('query', '')}")
                 query = data.get("query", "")
                 return self.search_song(query)
             case _:
+                logger.warning(f"Client {client_id} sent unknown action: {action}")
                 return self._error(code=UNKNOWN_ACTION, message=f"Unknown action: {action}")
 
     def check_currently_playing(self):

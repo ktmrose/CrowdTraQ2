@@ -1,6 +1,6 @@
-import uuid
-import json
+import uuid, json, logging
 
+logger = logging.getLogger("app.core.identity_manager")
 class IdentityManager:
     def __init__(self):
         # Map session_id -> websocket
@@ -8,6 +8,7 @@ class IdentityManager:
 
     def create_session_id(self) -> str:
         """Always generate a new unique session ID."""
+        logger.debug("Generating new session ID")
         return str(uuid.uuid4())
 
     def register(self, websocket, session_id: str | None = None) -> str:
@@ -17,11 +18,13 @@ class IdentityManager:
         Returns the session_id used.
         """
         sid = session_id or self.create_session_id()
+        logger.debug(f"Registering client with session ID: {sid}")
         self._clients[sid] = websocket
         return sid
 
     def unregister(self, session_id: str):
         """Remove a client by session_id."""
+        logger.debug(f"Unregistering client with session ID: {session_id}")
         self._clients.pop(session_id, None)
 
     def get_websocket(self, session_id: str):
@@ -49,5 +52,5 @@ class IdentityManager:
             try:
                 await ws.send(data)
             except Exception:
-                print(f"Failed to send to a client:", ws)                
+                logger.error(f"Failed to send to a client:", ws)                
                 pass
