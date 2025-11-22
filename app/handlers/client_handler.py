@@ -88,9 +88,17 @@ class ClientHandler:
                 logger.debug(f"Client {client_id} searching for songs with query: {data.get('query', '')}")
                 query = data.get("query", "")
                 return self.search_song(query)
+            case "log_event":
+                event_message = data.get("message", "unknown")
+                event_details = data.get("context", {})
+                event_time = data.get("timestamp")
+                session_id = data.get("sessionId")
+                if (session_id != client_id):
+                    logger.warning(f"Client {client_id} attempted to log event for session {session_id}")
+                logger.debug(f"Client {client_id} logged event: {event_message} at {event_time} with details: {event_details}")
+                return {"success": True}
             case _:
                 logger.warning(f"Client {client_id} sent unknown action: {action}")
-                return self._error(code=UNKNOWN_ACTION, message=f"Unknown action: {action}")
 
     def check_currently_playing(self):
         current = self._currently_playing or self._spotify_connection.get_currently_playing()
