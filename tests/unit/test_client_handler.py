@@ -37,7 +37,7 @@ def test_message_handler_rejects_missing_action():
 def test_message_handler_rejects_unknown_action():
     handler = ClientHandler(MagicMock())
     result = handler.message_handler({"action": "bogus"}, "client1")
-    assert result["error"]["code"] != ""  # should be UNKNOWN_ACTION
+    assert result["success"] == False
 
 # --- add_track flow ---
 

@@ -98,7 +98,8 @@ class ClientHandler:
                 logger.debug(f"Client {client_id} logged event: {event_message} at {event_time} with details: {event_details}")
                 return {"success": True}
             case _:
-                logger.warning(f"Client {client_id} sent unknown action: {action}")
+                logger.warning("Client {client_id} sent unknown action: {action}")
+                return {"success": False}
 
     def check_currently_playing(self):
         current = self._currently_playing or self._spotify_connection.get_currently_playing()

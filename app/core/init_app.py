@@ -55,7 +55,7 @@ def start_spotify_integration():
     return flask_thread, spotify_client_thread
 
 def establish_spotify_connection():
-    spotify_connection = SpotifyConnectionManager().get_instance()
+    spotify_connection = SpotifyConnectionManager.get_instance()
     auth_url = spotify_connection.get_authorization_url()
-    logger.debug("Authorization URL generated: ", auth_url)
+    logger.debug("Authorization URL generated: %s", auth_url)
     return auth_url
