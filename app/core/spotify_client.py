@@ -1,6 +1,6 @@
 import base64
 import os, time, requests, json, urllib.parse, base64, logging
-from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
+from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, ENV
 
 logger = logging.getLogger("app.core.spotify_client")
 class SpotifyConnection:
@@ -31,7 +31,13 @@ class SpotifyConnection:
             json.dump(self.token_info, f)
 
     def load_tokens(self, path="tokens.json"):
-        if not os.path.exists(path):
+        if (ENV != 'dev'):
+            token_info = {
+                "access_token": os.getenv("SPOTIFY_ACCESS_TOKEN"),
+                "refresh_token": os.getenv("SPOTIFY_REFRESH_TOKEN"),
+                "expires_at": int(os.getenv("SPOTIFY_EXPIRES_AT", "0"))
+            }
+        elif not os.path.exists(path):
             return False
         try:
             with open(path) as f:
