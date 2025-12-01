@@ -1,6 +1,6 @@
 import base64
 import os, time, requests, json, urllib.parse, base64, logging
-from app.config.settings import api, request_info, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, ENV
+from app.config.settings import api, request_info, HOST, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, ENV
 
 logger = logging.getLogger("app.core.spotify_client")
 class SpotifyConnection:
@@ -64,7 +64,7 @@ class SpotifyConnection:
         params = {
             "client_id": self._client_id,
             "response_type": "code",
-            "redirect_uri": "http://localhost:8081/callback",
+            "redirect_uri": f"http://{HOST}:8081/callback",
             "scope": "user-modify-playback-state user-read-currently-playing user-read-playback-state",
         }
         authorize_url = f"{api["authorize"]}?{urllib.parse.urlencode(params)}"
@@ -77,7 +77,7 @@ class SpotifyConnection:
         data = {
             "grant_type": "authorization_code",
             "code": authorization_code,
-            "redirect_uri": "http://localhost:8081/callback",
+            "redirect_uri": f"http://{HOST}:8081/callback",
             "client_id": self._client_id,
             "client_secret": self._client_secret
         }

@@ -5,6 +5,7 @@ from flask import Flask
 from werkzeug.serving import make_server
 from threading import Thread
 from app.routes.routes import register_routes
+from app.config.settings import HOST, ports
 import logging
 
 logger = logging.getLogger("app.core.init_app")
@@ -15,7 +16,7 @@ register_routes(app)
 class SpotifyConnectionThread(Thread):
     def __init__(self):
         Thread.__init__(self)
-        self.server = make_server('localhost', 8081, app)
+        self.server = make_server(HOST, ports["SPOTIFY_CLIENT_PORT"], app)
         self.context = app.app_context()
         self.context.push()
     

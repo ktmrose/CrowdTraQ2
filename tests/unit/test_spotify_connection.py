@@ -1,7 +1,7 @@
-import pytest
-import time
+import pytest, time, urllib.parse
 from unittest.mock import patch, MagicMock
 import app.core.spotify_client as spotify_client
+from app.config.settings import HOST
 
 # --- Constructor defaults ---
 
@@ -27,7 +27,11 @@ def test_get_authorization_url_contains_client_id(monkeypatch):
     url = conn.get_authorization_url()
     assert "client_id=abc123" in url
     assert "response_type=code" in url
-    assert "redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Fcallback" in url
+    expected_redirect = urllib.parse.urlencode(
+        {"redirect_uri": f"http://{HOST}:8081/callback"}
+    )
+    assert expected_redirect in url
+
 
 # --- Token exchange ---
 

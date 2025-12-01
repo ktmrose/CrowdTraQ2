@@ -2,13 +2,14 @@ import os
 
 # Environment: dev, beta, prod
 ENV = os.getenv("APP_ENV", "dev")
-
-# Logging level defaults
+HOST = "127.0.0.1"
 if ENV == "dev":
     LOG_LEVEL = "DEBUG"
 elif ENV == "beta":
+    # Update host to beta endpoint when available
     LOG_LEVEL = "INFO"
 else:  # prod
+    # Update host to prod endpoint when available
     LOG_LEVEL = "WARNING"
 
 api = {
@@ -31,7 +32,7 @@ ports = {
 }
 
 TOKENS_FILE = "tokens.json"
-STARTING_TOKENS = 1 # change to 5 for beta test
+STARTING_TOKENS = 5
 COST_MODIFIER = 2
 POPULAR_TRACK_REWARD = 2
 

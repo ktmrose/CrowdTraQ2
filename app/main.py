@@ -109,7 +109,7 @@ async def client_connector(websocket):
         identity_manager.unregister(session_id)
 
 async def start_websocket_server():
-    async with serve(client_connector, "localhost", settings.ports["WEBSOCKET_SERVER_PORT"]):
+    async with serve(client_connector, settings.HOST, settings.ports["WEBSOCKET_SERVER_PORT"]):
         logger.info(f"Session started on port {settings.ports['WEBSOCKET_SERVER_PORT']} in {settings.ENV} mode.")
         await shutdown_event.wait()
 
